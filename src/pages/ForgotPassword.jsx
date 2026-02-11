@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function ForgotPassword() {
@@ -60,12 +61,12 @@ export default function ForgotPassword() {
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600">
             Remember your password?{" "}
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="text-blue-600 hover:underline font-medium"
             >
               Back to login
-            </a>
+            </Link>
           </p>
         </div>
 
