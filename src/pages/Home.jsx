@@ -3,7 +3,6 @@ import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 //import Toast from "../components/Toast";
-//import { syncReports, setSyncStatusListener, setReportSyncedListener } from "../lib/sync";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 //import { startNotificationListener } from "../lib/notificationListener";
 
@@ -26,41 +25,6 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
 
-
-  const subscribeToPush = async () => {
-    const registration = await navigator.serviceWorker.ready;
-    
-    // 1. Request Permission
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
-
-    // 2. Subscribe to Push Service
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC
-    });
-
-    // 3. Save to Supabase
-    const { data: existingData } = await supabase
-      .from('push_subscriptions')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (existingData) {
-      await supabase
-        .from('push_subscriptions')
-        .delete()
-        .eq('user_id', user.id);
-    }
-
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert({ 
-        user_id: user.id,
-        subscription: subscription.toJSON() 
-      });
-  };
 
   // const sendTestNotification = async () => {
 
@@ -204,9 +168,6 @@ export default function Home() {
 
       
       <div className="p-4 border rounded">
-        <button onClick={subscribeToPush} className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded mt-2">
-          Subscribe to Push Notification
-        </button>
         <button onClick={wakePushWorker} className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded mt-2">
           Wake Up Worker
         </button>

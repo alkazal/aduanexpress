@@ -9,6 +9,41 @@ export default function Login() {
 
   const navigate = useNavigate();
 
+  const subscribeToPush = async (user) => {
+    if (!user) return;
+    if (!("serviceWorker" in navigator)) return;
+    if (!("Notification" in window)) return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC,
+    });
+
+    const { data: existingData } = await supabase
+      .from("push_subscriptions")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingData) {
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", user.id);
+    }
+
+    await supabase
+      .from("push_subscriptions")
+      .upsert({
+        user_id: user.id,
+        subscription: subscription.toJSON(),
+      });
+  };
+
   const handleLogin = async () => {
     setStatus("");
 
@@ -41,6 +76,10 @@ export default function Login() {
     };
 
     localStorage.setItem("appUser", JSON.stringify(cachedUser));
+
+    subscribeToPush(user).catch((err) => {
+      console.warn("Push subscription skipped:", err);
+    });
 
     navigate("/");
   };
