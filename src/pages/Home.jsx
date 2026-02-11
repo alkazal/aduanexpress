@@ -26,23 +26,6 @@ export default function Home() {
   const navigate = useNavigate();
 
 
-  // const sendTestNotification = async () => {
-
-  //   console.log("user.id:", user.id);
-
-  //   const { data, error } = await supabase.functions.invoke('send-push', {
-  //     body: { 
-  //       userId: "c2315f42-cf57-426d-8e33-3578aa392e0a",//user.id,
-  //       title: "Hello BARABBASS from Supabase!", 
-  //       body: "This is a test push notification for user c2315f42-cf57-426d-8e33-3578aa392e0a ."
-  //       //body: "This is a test push notification for user " + user.id + "  ." 
-  //     },
-  //   });
-
-  //   if (error) console.error('Error invoking function:', error);
-  //   else console.log('Function response:', data);
-  // };
-
   async function wakePushWorker() {
     await fetch("https://yzylysefvtnmyrkidzfk.supabase.co/functions/v1/send-push", {
       method: "POST",
@@ -167,11 +150,11 @@ export default function Home() {
       </h1>
 
       
-      <div className="p-4 border rounded">
+      {/* <div className="p-4 border rounded">
         <button onClick={wakePushWorker} className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded mt-2">
           Wake Up Worker
         </button>
-      </div>
+      </div> */}
 
 
       {syncStatus === "syncing" && (
