@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 import Login from "./pages/Login";
@@ -27,7 +27,9 @@ import Navigation from "./components/Navigation";
 
 //import { usePushWorker } from "./lib/usePushWorker";
 
-export default function App() {
+function AppContent() {
+  const location = useLocation();
+  const hideNavigation = location.pathname === "/login";
 
   //usePushWorker();
 
@@ -37,8 +39,8 @@ export default function App() {
 
 
   return (
-    <BrowserRouter>
-      <Navigation />
+    <>
+      {!hideNavigation && <Navigation />}
 
       <div className="pb-20 md:pb-0"> 
 
@@ -115,6 +117,14 @@ export default function App() {
       </div>
       
       <SyncStatus />
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }
