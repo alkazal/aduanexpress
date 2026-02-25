@@ -35,12 +35,22 @@ export default function AssignReport() {
     if (navigator.onLine) {
       const { data: reportsData, error: repErr } = await supabase
         .from("reports")
-        .select("*")
+        .select(`
+          *,
+          project:project_id ( name ),
+          reporter:user_id ( full_name )
+        `)
         .eq("status", "Submitted")
         .order("created_at", { ascending: false });
 
       if (repErr) console.error(repErr);
-      else setReports(reportsData || []);
+      else {
+        const list = (reportsData || []).map((r) => ({
+          ...r,
+          project_name: r.project?.name || r.project_name || null
+        }));
+        setReports(list);
+      }
     }
     else {
       // OFFLINE fallback
@@ -48,7 +58,17 @@ export default function AssignReport() {
         .where("status")
         .equals("Submitted")
         .toArray();
-      setReports(offline || []);
+      const list = await Promise.all(
+        (offline || []).map(async (r) => {
+          if (r.project_name || !r.project_id) return r;
+          const proj = await db.projects.get(r.project_id);
+          return {
+            ...r,
+            project_name: proj?.name || null
+          };
+        })
+      );
+      setReports(list);
     }
 
     // Fetch list of technicians
@@ -194,8 +214,14 @@ export default function AssignReport() {
             <p className="font-bold text-lg">{r.title || "Untitled Report"}</p>
             <p className="text-sm text-gray-600">{r.description}</p>
 
+            {r.project_name && (
+              <div className="text-sm text-gray-500 mt-1">
+                Project: {r.project_name}
+              </div>
+            )}
+
             <div className="text-sm text-gray-500 mt-1">
-              Submitted by: {r.user_id}
+              Submitted by: {r.reporter?.full_name || r.reporter_name || r.user_id}
             </div>
 
             <div className="flex gap-3 mt-3">

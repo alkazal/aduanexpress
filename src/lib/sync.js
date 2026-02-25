@@ -56,6 +56,28 @@ export async function syncReports() {
     }
 
     /* =========================================================
+       0. SYNC PROJECTS (for selectors + offline display)
+    ========================================================== */
+    try {
+      const { data: onlineProjects, error: projErr } = await supabase
+        .from("projects")
+        .select("id, name, updated_at")
+        .order("name", { ascending: true });
+
+      if (!projErr && onlineProjects) {
+        for (const p of onlineProjects) {
+          await db.projects.put({
+            id: p.id,
+            name: p.name,
+            updated_at: p.updated_at || null
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Projects sync failed:", err);
+    }
+
+    /* =========================================================
        1. DELETE ATTACHMENTS (from Dexie → Supabase → Storage)
     ========================================================== */
     const attachmentsToDelete = await db.attachments
@@ -175,6 +197,7 @@ export async function syncReports() {
         title: report.title,
         description: report.description,
         report_type: report.report_type,
+        project_id: report.project_id || null,
         status: report.status,
         assigned_to: report.assigned_to,
         assigned_at: report.assigned_at,
@@ -315,6 +338,7 @@ export async function syncReports() {
         *,
         reporter:user_id ( full_name ),
         technician:assigned_to ( full_name ),
+        project:project_id ( id, name ),
         history:report_status_history(
           id,
           old_status,
@@ -329,10 +353,20 @@ export async function syncReports() {
 
     if (onlineReports) {
       for (const r of onlineReports) {
+        if (r.project?.id) {
+          await db.projects.put({
+            id: r.project.id,
+            name: r.project.name,
+            updated_at: r.project.updated_at || null
+          });
+        }
+
         await db.reports.put({
           ...r,
           reporter_name: r.reporter?.full_name || null,
           technician_name: r.technician?.full_name || null,
+          project_id: r.project?.id || r.project_id || null,
+          project_name: r.project?.name || r.project_name || null,
           synced: true,
           _synced_once: true,
            _status_changes: r._status_changes || []

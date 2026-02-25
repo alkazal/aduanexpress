@@ -42,11 +42,20 @@ export default function TechnicianDashboard() {
     if (navigator.onLine) {
       const { data, error } = await supabase
         .from("reports")
-        .select("*")
+        .select(`
+          *,
+          project:project_id ( name )
+        `)
         .eq("assigned_to", user.id)
         .order("assigned_at", { ascending: false });
 
-      if (!error) setReports(data || []);
+      if (!error) {
+        const list = (data || []).map((r) => ({
+          ...r,
+          project_name: r.project?.name || r.project_name || null
+        }));
+        setReports(list);
+      }
     } 
     // ---- OFFLINE ----
     else {
@@ -55,7 +64,18 @@ export default function TechnicianDashboard() {
         .equals(user.id)
         .toArray();
 
-      setReports(offline || []);
+      const list = await Promise.all(
+        (offline || []).map(async (r) => {
+          if (r.project_name || !r.project_id) return r;
+          const proj = await db.projects.get(r.project_id);
+          return {
+            ...r,
+            project_name: proj?.name || null
+          };
+        })
+      );
+
+      setReports(list);
     }
 
     setLoading(false);
@@ -183,6 +203,12 @@ export default function TechnicianDashboard() {
             <p className="text-sm text-gray-500">{r.ticket_no}</p>
             <p className="font-semibold text-lg">{r.title}</p>
             <p className="text-gray-600">{r.description}</p>
+
+            {r.project_name && (
+              <p className="text-sm text-gray-500 mt-1">
+                Project: {r.project_name}
+              </p>
+            )}
 
             <p className="text-sm mt-2">
               <b>Status:</b>{" "}

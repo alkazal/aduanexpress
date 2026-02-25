@@ -18,6 +18,7 @@ export default function EditReport() {
   const [saving, setSaving] = useState(false);
   const [progressMap, setProgressMap] = useState({});
   const [compressing, setCompressing] = useState(false);
+  const [projects, setProjects] = useState([]);
 
   // -----------------------------
   // LOAD REPORT (offline first)
@@ -74,6 +75,38 @@ export default function EditReport() {
 
     loadData();
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProjects() {
+      const localProjects = await db.projects.toArray();
+      if (active) setProjects(localProjects);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setProjects(data);
+          for (const p of data) {
+            await db.projects.put({
+              id: p.id,
+              name: p.name,
+              updated_at: p.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadProjects();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // -----------------------------
   // ADD NEW FILES
@@ -213,6 +246,30 @@ export default function EditReport() {
         <option value="Incident">Incident</option>
         <option value="Maintenance">Maintenance</option>
         <option value="Attendance">Attendance</option>
+      </select>
+
+      {/* Project */}
+      <label className="block text-sm mb-1 font-semibold">
+        Project
+      </label>
+      <select
+        value={report.project_id || ""}
+        onChange={(e) => {
+          const selected = projects.find((p) => p.id === e.target.value);
+          setReport({
+            ...report,
+            project_id: e.target.value,
+            project_name: selected?.name || null
+          });
+        }}
+        className="border w-full p-2 rounded mb-3"
+      >
+        <option value="">Select</option>
+        {projects.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
       </select>
 
       {/* Description */}

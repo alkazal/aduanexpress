@@ -45,6 +45,16 @@ export default function ReportDetails() {
         setReport(local);
 
         local.history = local._status_changes || [];
+
+        if (local.project_id && !local.project_name) {
+          const proj = await db.projects.get(local.project_id);
+          if (proj) {
+            setReport((prev) => ({
+              ...prev,
+              project_name: proj.name
+            }));
+          }
+        }
         
         const att = await db.attachments
           .where("report_id")
@@ -63,6 +73,7 @@ export default function ReportDetails() {
             *,
             reporter:user_id ( full_name ),
             technician:assigned_to ( full_name ),
+            project:project_id ( id, name ),
             history:report_status_history (
               id,
               old_status,
@@ -78,7 +89,11 @@ export default function ReportDetails() {
           .single();
 
         if (!error && online) {
-          setReport(online);
+          setReport({
+            ...online,
+            project_id: online.project?.id || online.project_id || null,
+            project_name: online.project?.name || online.project_name || null
+          });
 
           const { data: onlineAtt } = await supabase
             .from("attachments")
@@ -132,8 +147,18 @@ export default function ReportDetails() {
   //   });
   // }
 
-  // 3) Status change history from DB
-  (report.history || report._status_changes || []).forEach(h => {
+  // 3) Status change history from DB (deduped)
+  const rawHistory = report.history || report._status_changes || [];
+  const seenHistoryKeys = new Set();
+
+  rawHistory.forEach((h) => {
+    const key = h.id
+      ? `id:${h.id}`
+      : `k:${h.old_status}|${h.new_status}|${h.changed_at}|${h.changed_by}|${h.changed_by_name}|${h.comment}`;
+
+    if (seenHistoryKeys.has(key)) return;
+    seenHistoryKeys.add(key);
+
     timeline.push({
       label: `${h.old_status} → ${h.new_status}`,
       at: h.changed_at,
@@ -176,6 +201,12 @@ export default function ReportDetails() {
           <b>Status:</b>{" "}
           <span className="text-blue-600">{report.status}</span>
         </p>
+        {(report.project_name || report.project_id) && (
+          <p>
+            <b>Project:</b>{" "}
+            {report.project_name || report.project_id}
+          </p>
+        )}
         <p>
           <b>Submitted by:</b>{" "}
           {report.reporter?.full_name || report.reporter_name || report.user_id}

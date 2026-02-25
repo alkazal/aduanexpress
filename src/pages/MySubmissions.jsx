@@ -48,7 +48,8 @@ export default function MySubmissions() {
           .select(`
             *,
             user_profiles: user_id ( full_name ),
-            technician:assigned_to ( full_name )
+            technician:assigned_to ( full_name ),
+            project:project_id ( name )
           `)
           .order("created_at", { ascending: false });
       } else {
@@ -57,7 +58,8 @@ export default function MySubmissions() {
           .select(`
             *,
             user_profiles: user_id ( full_name ),
-            technician:assigned_to ( full_name )
+            technician:assigned_to ( full_name ),
+            project:project_id ( name )
           `)
           .eq("user_id", userId)
           .order("created_at", { ascending: false });
@@ -69,7 +71,8 @@ export default function MySubmissions() {
         list = data.map(r => ({
           ...r,
           submitted_by: r.user_profiles?.full_name || "Unknown",
-          assigned_to: r.technician?.full_name || "Unknown"
+          assigned_to: r.technician?.full_name || "Unknown",
+          project_name: r.project?.name || r.project_name || null
         }));
       }
     } else {
@@ -91,7 +94,8 @@ export default function MySubmissions() {
         submitted_by: userRole === "manager"
           ? r.reporter_name || "User"
           : r.reporter_name || "You",
-        assigned_to: r.technician_name
+        assigned_to: r.technician_name,
+        project_name: r.project_name || null
       }));
     }
 
@@ -143,6 +147,11 @@ export default function MySubmissions() {
             <p>
               <b>Ticket No:</b> {x.ticket_no}
             </p>
+            {x.project_name && (
+              <p>
+                <b>Project:</b> {x.project_name}
+              </p>
+            )}
             <p className="text-sm mt-2">
               <b>Status:</b>{" "}
               <span className={`font-semibold ${statusColor(x.status)}`}>

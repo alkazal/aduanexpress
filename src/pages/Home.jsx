@@ -72,7 +72,8 @@ export default function Home() {
           .select(`
             *,
             user_profiles: user_id ( full_name ),
-            technician:assigned_to ( full_name )
+            technician:assigned_to ( full_name ),
+            project:project_id ( name )
           `)
           .order("created_at", { ascending: false });
       } else {
@@ -81,7 +82,8 @@ export default function Home() {
           .select(`
             *,
             user_profiles: user_id ( full_name ),
-            technician:assigned_to ( full_name )
+            technician:assigned_to ( full_name ),
+            project:project_id ( name )
           `)
           .eq("user_id", session.user.id)
           .order("created_at", { ascending: false });
@@ -93,7 +95,8 @@ export default function Home() {
         list = data.map(r => ({
           ...r,
           submitted_by: r.user_profiles?.full_name || "Unknown",
-          assigned_to: r.technician?.full_name || "Unknown"
+          assigned_to: r.technician?.full_name || "Unknown",
+          project_name: r.project?.name || r.project_name || null
         }));
       }
       // const { data, error } = await supabase
@@ -136,6 +139,15 @@ export default function Home() {
   const pendingSync = reports.filter(r => !r.synced).length;
   const recentReports = reports.slice(0, 5);
 
+  const statusCounts = reports.reduce(
+    (acc, r) => {
+      const key = (r.status || "").toUpperCase();
+      if (key) acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    { NEW: 0, OPEN: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
+  );
+
   const reportTypes = ["Attendance", "Incident", "Maintenance"];
   const chartData = reportTypes.map(type => ({
     type,
@@ -161,23 +173,61 @@ export default function Home() {
         <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white shadow rounded-lg p-4 text-center">
-          <p className="text-gray-500">Total Reports</p>
-          <p className="text-2xl font-bold">{totalReports}</p>
-        </div>
+       {/* Summary Cards */}
+      <div class="max-w-[100rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+        <div class="grid items-center lg:grid-cols-12 gap-6 lg:gap-12">
+          <div class="lg:col-span-2">
+            <div class="lg:pe-6 xl:pe-12">
+              <p class="text-6xl font-bold leading-10 text-primary">
+                {totalReports}               
+              </p>
+              <p class="mt-2 sm:mt-3 text-muted-foreground-1">Total Reports</p>
+            </div>
+          </div>
 
-        <div className="bg-white shadow rounded-lg p-4 text-center">
-          <p className="text-gray-500">Pending Sync</p>
-          <p className="text-2xl font-bold">{pendingSync}</p>
-        </div>
+          <div class="lg:col-span-8 relative lg:before:absolute lg:before:top-0 lg:before:-start-12 lg:before:w-px lg:before:h-full lg:before:bg-surface-1">
+            <h4 class="text-lg sm:text-xl font-semibold text-foreground">Report Status</h4>
+            <div class="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 sm:gap-8">
+              <div>
+                <p class="text-3xl font-semibold text-primary">{statusCounts.NEW}</p>
+                <p class="mt-1 text-muted-foreground-1">NEW</p>
+              </div>
 
-        <div className="bg-white shadow rounded-lg p-4 text-center">
-          <p className="text-gray-500">Recent Reports</p>
-          <p className="text-2xl font-bold">{recentReports.length}</p>
+              <div>
+                <p class="text-3xl font-semibold text-primary">{statusCounts.OPEN}</p>
+                <p class="mt-1 text-muted-foreground-1">OPEN</p>
+              </div>
+
+              <div>
+                <p class="text-3xl font-semibold text-primary">{statusCounts.PENDING}</p>
+                <p class="mt-1 text-muted-foreground-1">PENDING</p>
+              </div>
+
+              <div>
+                <p class="text-3xl font-semibold text-primary">{statusCounts.RESOLVED}</p>
+                <p class="mt-1 text-muted-foreground-1">RESOLVED</p>
+              </div>
+
+              <div>
+                <p class="text-3xl font-semibold text-primary">{statusCounts.CLOSED}</p>
+                <p class="mt-1 text-muted-foreground-1">CLOSED</p>
+              </div>
+
+              <div>
+                <p class="text-3xl font-semibold text-primary">{pendingSync}</p>
+                <p class="mt-1 text-muted-foreground-1">PENDING SYNC</p>
+              </div>
+
+              <div>
+                <p class="text-3xl font-semibold text-primary">{recentReports.length}</p>
+                <p class="mt-1 text-muted-foreground-1">RECENT REPORTS</p>
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
+     
 
       {/* Stacked Chart */}
       <div className="bg-white shadow rounded-lg p-4 mb-6">
@@ -218,6 +268,9 @@ export default function Home() {
                 )}
                 <p className="font-semibold">{r.title}</p>
                 <p className="text-gray-600 text-sm">{r.report_type}</p>                
+                {r.project_name && (
+                  <p className="text-gray-500 text-sm">Project: {r.project_name}</p>
+                )}
                 <p className="text-xs text-gray-400">
                   {new Date(r.created_at).toLocaleString()}
                 </p>

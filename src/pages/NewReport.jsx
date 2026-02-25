@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -9,12 +9,46 @@ export default function NewReport() {
   const navigate = useNavigate();
 
   const [reportType, setReportType] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [attachments, setAttachments] = useState([]); // multiple files
   const [error, setError] = useState(null);
   const [progressMap, setProgressMap] = useState({});
   const [compressing, setCompressing] = useState(false);
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProjects() {
+      const localProjects = await db.projects.toArray();
+      if (active) setProjects(localProjects);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setProjects(data);
+          for (const p of data) {
+            await db.projects.put({
+              id: p.id,
+              name: p.name,
+              updated_at: p.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadProjects();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -57,6 +91,11 @@ export default function NewReport() {
     e.preventDefault();
     setError(null);
 
+    if (!projectId) {
+      setError("Please select a project.");
+      return;
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -71,9 +110,13 @@ export default function NewReport() {
     const createdAt = new Date().toISOString();
 
     // Save report to Dexie
+    const selectedProject = projects.find((p) => p.id === projectId);
+
     await db.reports.put({
       id: reportId,
       report_type: reportType,
+      project_id: projectId,
+      project_name: selectedProject?.name || null,
       title,
       description,
       created_at: createdAt,
@@ -124,6 +167,29 @@ export default function NewReport() {
             <option value="Incident">Incident</option>
             <option value="Maintenance">Maintenance</option>
           </select>
+        </div>
+
+        {/* Project */}
+        <div>
+          <label className="block font-medium">Project</label>
+          <select
+            className="w-full border rounded-md p-2"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            required
+          >
+            <option value="">Select a project</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          {projects.length === 0 && (
+            <p className="text-sm text-gray-500 mt-1">
+              No projects available.
+            </p>
+          )}
         </div>
 
         {/* Title */}
