@@ -95,6 +95,8 @@ export default function Navigation() {
             </NavLink>
           )}
 
+          <NavLink to="/profile" className={linkClass}>Profile</NavLink>
+
           <NavLink to="/new-report" className={linkClass}>New Report</NavLink>
 
           
@@ -137,6 +139,11 @@ export default function Navigation() {
                 <span className="text-xs">Assign</span>
             </NavLink>
           )}
+
+          <NavLink to="/profile" className="flex flex-col items-center">
+            <ClipboardDocumentListIcon className="w-6 h-6" />
+            <span className="text-xs">Profile</span>
+          </NavLink>
 
           <NavLink to="/new-report" className="flex flex-col items-center">
             <PlusCircleIcon className="w-6 h-6" />

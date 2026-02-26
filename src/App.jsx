@@ -14,6 +14,7 @@ import EditReport from "./pages/EditReport";
 import AssignReport from "./pages/AssignReport";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import CloseReport from "./pages/ManagerCloseReport";
+import EditProfile from "./pages/EditProfile";
 
 import TestSession from "./TestSession"
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -101,6 +102,14 @@ function AppContent() {
               <PrivateRoute role="technician">
                 <TechnicianDashboard />
               </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
+              </ProtectedRoute>
             }
           />
           {/* <Route

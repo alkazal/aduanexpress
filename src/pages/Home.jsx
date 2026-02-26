@@ -23,6 +23,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("idle"); // idle | syncing | done
   const [toastMessage, setToastMessage] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
   const navigate = useNavigate();
 
 
@@ -135,11 +136,19 @@ export default function Home() {
 
   }, []);
 
-  const totalReports = reports.length;
-  const pendingSync = reports.filter(r => !r.synced).length;
-  const recentReports = reports.slice(0, 5);
+  const projectOptions = Array.from(
+    new Set(reports.map((r) => r.project_name).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
 
-  const statusCounts = reports.reduce(
+  const filteredReports = selectedProject
+    ? reports.filter((r) => r.project_name === selectedProject)
+    : reports;
+
+  const totalReports = filteredReports.length;
+  const pendingSync = filteredReports.filter(r => !r.synced).length;
+  const recentReports = filteredReports.slice(0, 5);
+
+  const statusCounts = filteredReports.reduce(
     (acc, r) => {
       const key = (r.status || "").toUpperCase();
       if (key) acc[key] = (acc[key] || 0) + 1;
@@ -151,8 +160,8 @@ export default function Home() {
   const reportTypes = ["Attendance", "Incident", "Maintenance"];
   const chartData = reportTypes.map(type => ({
     type,
-    online: reports.filter(r => r.report_type === type && r.synced).length,
-    offline: reports.filter(r => r.report_type === type && !r.synced).length,
+    online: filteredReports.filter(r => r.report_type === type && r.synced).length,
+    offline: filteredReports.filter(r => r.report_type === type && !r.synced).length,
   }));
 
   return (
@@ -186,7 +195,23 @@ export default function Home() {
           </div>
 
           <div class="lg:col-span-8 relative lg:before:absolute lg:before:top-0 lg:before:-start-12 lg:before:w-px lg:before:h-full lg:before:bg-surface-1">
-            <h4 class="text-lg sm:text-xl font-semibold text-foreground">Report Status</h4>
+            <div class="flex items-center justify-between gap-4">
+              <h4 class="text-lg sm:text-xl font-semibold text-foreground">Report Status</h4>
+              <div class="w-full max-w-xs">
+                <select
+                  class="w-full border rounded-md p-2 text-sm"
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                >
+                  <option value="">All Projects</option>
+                  {projectOptions.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div class="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 sm:gap-8">
               <div>
                 <p class="text-3xl font-semibold text-primary">{statusCounts.NEW}</p>

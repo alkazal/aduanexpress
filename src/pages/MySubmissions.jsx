@@ -16,6 +16,9 @@ export default function MySubmissions() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("idle");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
 
   const loadData = async () => {
@@ -115,9 +118,57 @@ export default function MySubmissions() {
 
   }, []);
 
+  const projectOptions = Array.from(
+    new Set(items.map((r) => r.project_name).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredItems = items.filter((r) => {
+    const matchProject = selectedProject
+      ? r.project_name === selectedProject
+      : true;
+
+    const createdDate = new Date(r.created_at).toISOString().slice(0, 10);
+    const matchStart = startDate ? createdDate >= startDate : true;
+    const matchEnd = endDate ? createdDate <= endDate : true;
+
+    return matchProject && matchStart && matchEnd;
+  });
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Reports</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <h1 className="text-2xl font-bold">Reports</h1>
+        <div className="flex items-center gap-3 w-full max-w-md">
+          <select
+            className="w-full border rounded-md p-2 text-sm"
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+          >
+            <option value="">All Projects</option>
+            {projectOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            className="w-full border rounded-md p-2 text-sm"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            aria-label="Start date"
+          />
+
+          <input
+            type="date"
+            className="w-full border rounded-md p-2 text-sm"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            aria-label="End date"
+          />
+        </div>
+      </div>
 
       {syncStatus === "syncing" && (
         <p className="text-blue-600 font-medium mb-2">Syncing offline reports...</p>
@@ -125,12 +176,12 @@ export default function MySubmissions() {
 
       {loading && <p>Loading...</p>}
 
-      {!loading && items.length === 0 && (
+      {!loading && filteredItems.length === 0 && (
         <p className="text-gray-500">You have no report submissions yet.</p>
       )}
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
-        {items.map((x) => (
+        {filteredItems.map((x) => (
           <div 
               key={x.id}
               onClick={() => navigate(`/report/${x.id}`)}
