@@ -23,9 +23,9 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'HELPDESK',
-        short_name: 'HDOL',
-        description: 'A simple progressive web app built with React + Vite',
+        name: 'ADUAN EXPRESS',
+        short_name: 'AduanExpress',
+        description: 'AduanExpress is a streamlined digital ticketing and reporting platform designed to simplify the process of submitting, tracking, and managing Aduan (complaints) for users across various agencies. With a user-friendly interface and robust features, AduanExpress empowers individuals to easily report issues, monitor their status, and receive timely updates, fostering greater accountability and responsiveness from agencies.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
