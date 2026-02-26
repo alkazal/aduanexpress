@@ -15,6 +15,9 @@ export default function TechnicianDashboard() {
   const [reports, setReports] = useState([]);
   const [statusUpdates, setStatusUpdates] = useState({});
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -189,16 +192,96 @@ export default function TechnicianDashboard() {
 
   if (loading) return <p className="p-6">Loading...</p>;
 
+  const projectOptions = Array.from(
+    new Set(reports.map((r) => r.project_name).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredReports = reports.filter((r) => {
+    const matchProject = selectedProject
+      ? r.project_name === selectedProject
+      : true;
+
+    const createdDate = new Date(r.created_at).toISOString().slice(0, 10);
+    const matchStart = startDate ? createdDate >= startDate : true;
+    const matchEnd = endDate ? createdDate <= endDate : true;
+
+    return matchProject && matchStart && matchEnd;
+  });
+
+  const statusCounts = filteredReports.reduce(
+    (acc, r) => {
+      const key = (r.status || "").toUpperCase();
+      if (key) acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    { NEW: 0, OPEN: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
+  );
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🔧 My Assigned Tickets</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <h1 className="text-2xl font-bold">🔧 My Assigned Tickets</h1>
+        <div className="flex items-center gap-3 w-full max-w-md">
+          <select
+            className="w-full border rounded-md p-2 text-sm"
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+          >
+            <option value="">All Projects</option>
+            {projectOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
 
-      {reports.length === 0 && (
+          <input
+            type="date"
+            className="w-full border rounded-md p-2 text-sm"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            aria-label="Start date"
+          />
+
+          <input
+            type="date"
+            className="w-full border rounded-md p-2 text-sm"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            aria-label="End date"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-4">
+        <div className="bg-white shadow rounded-lg p-3 border">
+          <p className="text-xs text-gray-500">NEW</p>
+          <p className="text-xl font-semibold">{statusCounts.NEW}</p>
+        </div>
+        <div className="bg-white shadow rounded-lg p-3 border">
+          <p className="text-xs text-gray-500">OPEN</p>
+          <p className="text-xl font-semibold">{statusCounts.OPEN}</p>
+        </div>
+        <div className="bg-white shadow rounded-lg p-3 border">
+          <p className="text-xs text-gray-500">PENDING</p>
+          <p className="text-xl font-semibold">{statusCounts.PENDING}</p>
+        </div>
+        <div className="bg-white shadow rounded-lg p-3 border">
+          <p className="text-xs text-gray-500">RESOLVED</p>
+          <p className="text-xl font-semibold">{statusCounts.RESOLVED}</p>
+        </div>
+        <div className="bg-white shadow rounded-lg p-3 border">
+          <p className="text-xs text-gray-500">CLOSED</p>
+          <p className="text-xl font-semibold">{statusCounts.CLOSED}</p>
+        </div>
+      </div>
+
+      {filteredReports.length === 0 && (
         <p className="text-gray-500">No assigned reports</p>
       )}
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {reports.map((r) => (
+        {filteredReports.map((r) => (
           <div key={r.id} className="bg-white shadow rounded-lg p-4 border">
             <p className="text-sm text-gray-500">{r.ticket_no}</p>
             <p className="font-semibold text-lg">{r.title}</p>
