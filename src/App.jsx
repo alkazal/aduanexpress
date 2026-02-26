@@ -15,6 +15,8 @@ import AssignReport from "./pages/AssignReport";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import CloseReport from "./pages/ManagerCloseReport";
 import EditProfile from "./pages/EditProfile";
+import UsersList from "./pages/UsersList";
+import UserProfile from "./pages/UserProfile";
 
 import TestSession from "./TestSession"
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -94,6 +96,22 @@ function AppContent() {
               <PrivateRoute role="manager">
                 <CloseReport/>
               </PrivateRoute>           
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <PrivateRoute role="manager">
+                <UsersList />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/users/:id"
+            element={
+              <PrivateRoute role="manager">
+                <UserProfile />
+              </PrivateRoute>
             }
           />
           <Route
