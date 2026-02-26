@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -8,6 +8,38 @@ export default function Login() {
   const [status, setStatus] = useState("");
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+
+    async function hydrateSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user || !active) return;
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("role, full_name")
+        .eq("id", user.id)
+        .single();
+
+      const cachedUser = {
+        id: user.id,
+        email: user.email,
+        role: profile?.role || "user",
+        full_name: profile?.full_name || "",
+      };
+
+      localStorage.setItem("appUser", JSON.stringify(cachedUser));
+      navigate("/");
+    }
+
+    hydrateSession();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
 
   const subscribeToPush = async (user) => {
     if (!user) return;
@@ -84,6 +116,21 @@ export default function Login() {
     navigate("/");
   };
 
+  const handleGoogleLogin = async () => {
+    setStatus("");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/login`
+      }
+    });
+
+    if (error) {
+      setStatus("Google sign-in failed. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
@@ -121,6 +168,21 @@ export default function Login() {
         >
           Login
         </button>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-500">OR</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        {/* Google Login */}
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full border border-gray-300 py-2 rounded-md hover:bg-gray-50 font-medium"
+        >
+          Continue with Google
+        </button>
+
 
         {/* Status Message */}
         {status && (

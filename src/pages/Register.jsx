@@ -7,19 +7,23 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("error");
 
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     setStatus("");
+    setStatusType("error");
 
     if (!email || !password) {
       setStatus("Please fill in all fields");
+      setStatusType("error");
       return;
     }
 
     if (password !== confirmPassword) {
       setStatus("Passwords do not match");
+      setStatusType("error");
       return;
     }
 
@@ -30,11 +34,13 @@ export default function Register() {
 
     if (error) {
       setStatus(error.message);
+      setStatusType("error");
       return;
     }
 
-    setStatus("Registration successful! Redirecting...");
-    setTimeout(() => navigate("/login"), 1200);
+    setStatus("Registration successful! Please open your email to confirm your signup. Redirecting to login...");
+    setStatusType("success");
+    setTimeout(() => navigate("/login"), 4000);
   };
 
   return (
@@ -89,7 +95,13 @@ export default function Register() {
 
         {/* Status message */}
         {status && (
-          <p className="text-center mt-3 text-sm text-red-600">{status}</p>
+          <p
+            className={`text-center mt-3 text-sm ${
+              statusType === "success" ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {status}
+          </p>
         )}
 
         {/* Back to Login */}
