@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -8,7 +8,6 @@ import PlusCircleIcon from "@heroicons/react/24/outline/PlusCircleIcon";
 import ArrowRightIcon from "@heroicons/react/24/outline/ArrowRightIcon"; 
 
 export default function Navigation() {
-  const navigate = useNavigate();
   const [role, setRole] = useState(null);
   
   useEffect(() => {
@@ -59,9 +58,15 @@ export default function Navigation() {
 
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("appUser");
-    window.location.href = "/login";
+    try {
+      await supabase.auth.signOut({ scope: "global" });
+    } finally {
+      localStorage.removeItem("appUser");
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
+        .forEach((k) => localStorage.removeItem(k));
+      window.location.replace("/login");
+    }
   };
 
   const linkClass = ({ isActive }) =>
