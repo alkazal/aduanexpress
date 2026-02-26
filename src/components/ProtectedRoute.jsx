@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, requireProfileComplete = true }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [profileComplete, setProfileComplete] = useState(true);
@@ -54,6 +54,8 @@ export default function ProtectedRoute({ children }) {
   if (loading) return null; // or loading spinner
 
   if (!session) return <Navigate to="/login" replace />;
-  if (!profileComplete) return <Navigate to="/profile" replace />;
+  if (requireProfileComplete && !profileComplete) {
+    return <Navigate to="/profile" replace />;
+  }
   return children;
 }

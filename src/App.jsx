@@ -107,7 +107,7 @@ function AppContent() {
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireProfileComplete={false}>
                 <EditProfile />
               </ProtectedRoute>
             }
