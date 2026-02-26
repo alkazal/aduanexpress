@@ -61,7 +61,7 @@ export default function Navigation() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("appUser");
-    navigate("/login");
+    window.location.href = "/login";
   };
 
   const linkClass = ({ isActive }) =>
