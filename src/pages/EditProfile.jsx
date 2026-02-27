@@ -34,12 +34,60 @@ export default function EditProfile() {
         .eq("id", user.id)
         .single();
 
+      const authDisplayName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.user_metadata?.display_name ||
+        "";
+
       if (!error && data && active) {
-        setFullName(data.full_name || "");
+        setFullName(data.full_name || authDisplayName);
         setContactNo(data.contact_no || "");
         setAgencyName(data.agency_name || "");
         setAgencyRole(data.agency_role || "");
         setRole(data.role || "user");
+
+        if (!data.full_name && authDisplayName) {
+          const { error: persistNameError } = await supabase
+            .from("user_profiles")
+            .upsert({
+              id: user.id,
+              full_name: authDisplayName,
+            }, { onConflict: "id" });
+
+          if (!persistNameError) {
+            const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
+            localStorage.setItem(
+              "appUser",
+              JSON.stringify({
+                ...cachedUser,
+                full_name: authDisplayName,
+              })
+            );
+          }
+        }
+      } else if (active) {
+        setFullName(authDisplayName);
+
+        if (authDisplayName) {
+          const { error: persistNameError } = await supabase
+            .from("user_profiles")
+            .upsert({
+              id: user.id,
+              full_name: authDisplayName,
+            }, { onConflict: "id" });
+
+          if (!persistNameError) {
+            const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
+            localStorage.setItem(
+              "appUser",
+              JSON.stringify({
+                ...cachedUser,
+                full_name: authDisplayName,
+              })
+            );
+          }
+        }
       }
 
       const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
