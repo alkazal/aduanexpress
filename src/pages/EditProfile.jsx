@@ -18,6 +18,28 @@ export default function EditProfile() {
   useEffect(() => {
     let active = true;
 
+    async function persistAuthDisplayName(userId, displayName) {
+      if (!displayName) return;
+
+      const { error: persistNameError } = await supabase
+        .from("user_profiles")
+        .upsert({
+          id: userId,
+          full_name: displayName,
+        }, { onConflict: "id" });
+
+      if (!persistNameError) {
+        const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
+        localStorage.setItem(
+          "appUser",
+          JSON.stringify({
+            ...cachedUser,
+            full_name: displayName,
+          })
+        );
+      }
+    }
+
     async function loadProfile() {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
@@ -48,45 +70,13 @@ export default function EditProfile() {
         setRole(data.role || "user");
 
         if (!data.full_name && authDisplayName) {
-          const { error: persistNameError } = await supabase
-            .from("user_profiles")
-            .upsert({
-              id: user.id,
-              full_name: authDisplayName,
-            }, { onConflict: "id" });
-
-          if (!persistNameError) {
-            const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
-            localStorage.setItem(
-              "appUser",
-              JSON.stringify({
-                ...cachedUser,
-                full_name: authDisplayName,
-              })
-            );
-          }
+          await persistAuthDisplayName(user.id, authDisplayName);
         }
       } else if (active) {
         setFullName(authDisplayName);
 
         if (authDisplayName) {
-          const { error: persistNameError } = await supabase
-            .from("user_profiles")
-            .upsert({
-              id: user.id,
-              full_name: authDisplayName,
-            }, { onConflict: "id" });
-
-          if (!persistNameError) {
-            const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
-            localStorage.setItem(
-              "appUser",
-              JSON.stringify({
-                ...cachedUser,
-                full_name: authDisplayName,
-              })
-            );
-          }
+          await persistAuthDisplayName(user.id, authDisplayName);
         }
       }
 

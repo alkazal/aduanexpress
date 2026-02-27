@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
 import { urlBase64ToUint8Array } from "../lib/utils";
 
-const PUSH_TABLES = ["push_subscriptions", "push_subcription"];
+const PUSH_TABLES = ["push_subcription", "push_subscriptions"];
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -33,12 +33,21 @@ export default function Login() {
     if (!userId || !subscriptionJson) return;
 
     for (const tableName of PUSH_TABLES) {
-      const { error } = await supabase
+      const payload = {
+        user_id: userId,
+        subscription: subscriptionJson,
+      };
+
+      let { error } = await supabase
         .from(tableName)
-        .upsert({
-          user_id: userId,
-          subscription: subscriptionJson,
-        });
+        .upsert(payload, { onConflict: "user_id" });
+
+      if (error?.code === "42P10") {
+        const retry = await supabase
+          .from(tableName)
+          .upsert(payload);
+        error = retry.error;
+      }
 
       if (!error) {
         localStorage.removeItem("pendingPushSubscription");
@@ -84,8 +93,8 @@ export default function Login() {
   useEffect(() => {
     let active = true;
 
-    async function hydrateSession() {
-      const { data: { session } } = await supabase.auth.getSession();
+    async function hydrateSession(existingSession) {
+      const session = existingSession || (await supabase.auth.getSession()).data.session;
       const user = session?.user;
       if (!user || !active) return;
 
@@ -144,8 +153,16 @@ export default function Login() {
 
     hydrateSession();
 
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN") return;
+      const pendingSubscription = localStorage.getItem("pendingPushSubscription");
+      if (!pendingSubscription) return;
+      hydrateSession(session);
+    });
+
     return () => {
       active = false;
+      authListener.subscription.unsubscribe();
     };
   }, [navigate]);
 
