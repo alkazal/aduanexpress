@@ -1,13 +1,85 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
+import { urlBase64ToUint8Array } from "../lib/utils";
+
+const PUSH_TABLES = ["push_subscriptions", "push_subcription"];
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("error");
 
   const navigate = useNavigate();
+
+  const getPushSubscription = async () => {
+    if (!("serviceWorker" in navigator)) return null;
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) return existing;
+
+    const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC;
+    if (!vapidPublicKey) throw new Error("Missing VITE_VAPID_PUBLIC");
+
+    return registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+  };
+
+  const upsertSubscription = async (userId, subscriptionJson) => {
+    if (!userId || !subscriptionJson) return;
+
+    for (const tableName of PUSH_TABLES) {
+      const { error } = await supabase
+        .from(tableName)
+        .upsert({
+          user_id: userId,
+          subscription: subscriptionJson,
+        });
+
+      if (!error) {
+        localStorage.removeItem("pendingPushSubscription");
+        return;
+      }
+
+      if (error.code !== "42P01") {
+        throw error;
+      }
+    }
+
+    throw new Error("Push subscription table not found");
+  };
+
+  const subscribeToPush = async (user) => {
+    if (!user) return;
+    if (!("Notification" in window)) return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const subscription = await getPushSubscription();
+    if (!subscription) return;
+
+    await upsertSubscription(user.id, subscription.toJSON());
+  };
+
+  const preparePushForOAuth = async () => {
+    if (!("Notification" in window)) return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const subscription = await getPushSubscription();
+    if (!subscription) return;
+
+    localStorage.setItem(
+      "pendingPushSubscription",
+      JSON.stringify(subscription.toJSON())
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -31,6 +103,42 @@ export default function Login() {
       };
 
       localStorage.setItem("appUser", JSON.stringify(cachedUser));
+
+      const pendingSubscription = localStorage.getItem("pendingPushSubscription");
+      if (pendingSubscription) {
+        try {
+          await upsertSubscription(user.id, JSON.parse(pendingSubscription));
+          setStatusType("success");
+          setStatus("Notification subscription saved.");
+          localStorage.setItem(
+            "postLoginNotificationStatus",
+            JSON.stringify({
+              message: "Notification subscription saved.",
+              type: "success",
+            })
+          );
+          setTimeout(() => {
+            if (active) navigate("/");
+          }, 1200);
+          return;
+        } catch (error) {
+          console.warn("Failed to persist pending push subscription:", error);
+          setStatusType("error");
+          setStatus("Login succeeded, but notification subscription was not saved.");
+          localStorage.setItem(
+            "postLoginNotificationStatus",
+            JSON.stringify({
+              message: "Login succeeded, but notification subscription was not saved.",
+              type: "error",
+            })
+          );
+          setTimeout(() => {
+            if (active) navigate("/");
+          }, 1400);
+          return;
+        }
+      }
+
       navigate("/");
     }
 
@@ -41,43 +149,9 @@ export default function Login() {
     };
   }, [navigate]);
 
-  const subscribeToPush = async (user) => {
-    if (!user) return;
-    if (!("serviceWorker" in navigator)) return;
-    if (!("Notification" in window)) return;
-
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
-
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC,
-    });
-
-    const { data: existingData } = await supabase
-      .from("push_subscriptions")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (existingData) {
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", user.id);
-    }
-
-    await supabase
-      .from("push_subscriptions")
-      .upsert({
-        user_id: user.id,
-        subscription: subscription.toJSON(),
-      });
-  };
-
   const handleLogin = async () => {
     setStatus("");
+    setStatusType("error");
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -85,6 +159,7 @@ export default function Login() {
     });
 
     if (error) {
+      setStatusType("error");
       setStatus("Invalid login credentials");
       return;
     }
@@ -109,15 +184,46 @@ export default function Login() {
 
     localStorage.setItem("appUser", JSON.stringify(cachedUser));
 
-    subscribeToPush(user).catch((err) => {
+    try {
+      await subscribeToPush(user);
+      setStatusType("success");
+      setStatus("Login successful. Notification subscription saved.");
+      localStorage.setItem(
+        "postLoginNotificationStatus",
+        JSON.stringify({
+          message: "Login successful. Notification subscription saved.",
+          type: "success",
+        })
+      );
+    } catch (err) {
       console.warn("Push subscription skipped:", err);
-    });
+      setStatusType("error");
+      setStatus("Login successful, but notification subscription failed.");
+      localStorage.setItem(
+        "postLoginNotificationStatus",
+        JSON.stringify({
+          message: "Login successful, but notification subscription failed.",
+          type: "error",
+        })
+      );
+    }
 
-    navigate("/");
+    setTimeout(() => navigate("/"), 1000);
   };
 
   const handleGoogleLogin = async () => {
     setStatus("");
+    setStatusType("error");
+
+    try {
+      await preparePushForOAuth();
+      setStatusType("success");
+      setStatus("Notification permission granted. Continue Google sign-in...");
+    } catch (error) {
+      console.warn("Push pre-subscribe skipped:", error);
+      setStatusType("error");
+      setStatus("Google sign-in can continue, but notifications were not enabled.");
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -127,6 +233,7 @@ export default function Login() {
     });
 
     if (error) {
+      setStatusType("error");
       setStatus("Google sign-in failed. Please try again.");
     }
   };
@@ -186,7 +293,9 @@ export default function Login() {
 
         {/* Status Message */}
         {status && (
-          <p className="text-red-600 text-center mt-3 text-sm">{status}</p>
+          <p className={`text-center mt-3 text-sm ${statusType === "success" ? "text-green-600" : "text-red-600"}`}>
+            {status}
+          </p>
         )}
 
         {/* Register Link */}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
-//import Toast from "../components/Toast";
+import Toast from "../components/Toast";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 //import { startNotificationListener } from "../lib/notificationListener";
 
@@ -23,6 +23,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("idle"); // idle | syncing | done
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
   const [selectedProject, setSelectedProject] = useState("");
   const navigate = useNavigate();
 
@@ -125,6 +126,19 @@ export default function Home() {
   // Hooks inside component
   useEffect(() => {
     loadReports();
+
+    const rawStatus = localStorage.getItem("postLoginNotificationStatus");
+    if (rawStatus) {
+      try {
+        const parsed = JSON.parse(rawStatus);
+        if (parsed?.message) {
+          setToastMessage(parsed.message);
+          setToastType(parsed.type === "error" ? "error" : "success");
+        }
+      } catch {
+      }
+      localStorage.removeItem("postLoginNotificationStatus");
+    }
 
     // Listen to sync status changes
     setSyncStatusListener((status) => {
@@ -313,10 +327,11 @@ export default function Home() {
         Submit New Report
       </button>
 
-      {/* <Toast
+      <Toast
         message={toastMessage}
+        type={toastType}
         onClose={() => setToastMessage("")}
-      /> */}
+      />
     </div>
   );
 }
