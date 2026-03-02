@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
 import { urlBase64ToUint8Array } from "../lib/utils";
 
-const PUSH_TABLES = ["push_subcription", "push_subscriptions"];
+const PUSH_TABLES = ["push_subscriptions"];
 
 export default function Login() {
   const [email, setEmail] = useState("");
