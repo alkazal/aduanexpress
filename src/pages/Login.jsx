@@ -256,10 +256,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
 
-        <h1 className="text-2xl font-bold text-center mb-6">ADUAN EXPRESS</h1>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-lg font-semibold">AE</span>
+          </div>
+          <h1 className="text-2xl font-bold">ADUAN EXPRESS</h1>
+        </div>
 
         {/* Email */}
         <div className="mb-4">
