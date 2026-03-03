@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { Link, useNavigate } from "react-router-dom";
 import { urlBase64ToUint8Array } from "../lib/utils";
 
-const PUSH_TABLES = ["push_subcription", "push_subscriptions"];
+const PUSH_TABLES = ["push_subscriptions"];
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,6 +12,15 @@ export default function Login() {
   const [statusType, setStatusType] = useState("error");
 
   const navigate = useNavigate();
+
+  const formatErrorDetails = (error) => {
+    if (!error) return "Unknown error";
+    const code = error.code ? `code=${error.code}` : "";
+    const message = error.message ? `message=${error.message}` : "";
+    const details = error.details ? `details=${error.details}` : "";
+    const hint = error.hint ? `hint=${error.hint}` : "";
+    return [code, message, details, hint].filter(Boolean).join(" | ");
+  };
 
   const getPushSubscription = async () => {
     if (!("serviceWorker" in navigator)) return null;
@@ -31,6 +40,8 @@ export default function Login() {
 
   const upsertSubscription = async (userId, subscriptionJson) => {
     if (!userId || !subscriptionJson) return;
+
+    const attemptErrors = [];
 
     for (const tableName of PUSH_TABLES) {
       const payload = {
@@ -54,12 +65,19 @@ export default function Login() {
         return;
       }
 
+      attemptErrors.push({ tableName, error });
+
       if (error.code !== "42P01") {
-        throw error;
+        throw new Error(
+          `Push save failed on ${tableName}: ${formatErrorDetails(error)}`
+        );
       }
     }
 
-    throw new Error("Push subscription table not found");
+    const attempts = attemptErrors
+      .map(({ tableName, error }) => `${tableName}: ${formatErrorDetails(error)}`)
+      .join(" || ");
+    throw new Error(`Push subscription table not found. Attempts -> ${attempts}`);
   };
 
   const subscribeToPush = async (user) => {
@@ -133,7 +151,7 @@ export default function Login() {
         } catch (error) {
           console.warn("Failed to persist pending push subscription:", error);
           setStatusType("error");
-          setStatus("Login succeeded, but notification subscription was not saved.");
+          setStatus(`Login succeeded, but notification subscription was not saved. ${formatErrorDetails(error)}`);
           localStorage.setItem(
             "postLoginNotificationStatus",
             JSON.stringify({
@@ -215,7 +233,7 @@ export default function Login() {
     } catch (err) {
       console.warn("Push subscription skipped:", err);
       setStatusType("error");
-      setStatus("Login successful, but notification subscription failed.");
+      setStatus(`Login successful, but notification subscription failed. ${formatErrorDetails(err)}`);
       localStorage.setItem(
         "postLoginNotificationStatus",
         JSON.stringify({
@@ -315,7 +333,7 @@ export default function Login() {
 
         {/* Status Message */}
         {status && (
-          <p className={`text-center mt-3 text-sm ${statusType === "success" ? "text-green-600" : "text-red-600"}`}>
+          <p className={`text-center mt-3 text-sm whitespace-pre-line break-words ${statusType === "success" ? "text-green-600" : "text-red-600"}`}>
             {status}
           </p>
         )}
