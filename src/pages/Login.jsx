@@ -281,7 +281,7 @@ export default function Login() {
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white text-lg font-semibold">AE</span>
           </div>
-          <h1 className="text-2xl font-bold">ADUAN EXPRESS</h1>
+          <h1 className="text-2xl font-bold">AduanExpress</h1>
         </div>
 
         {/* Email */}
