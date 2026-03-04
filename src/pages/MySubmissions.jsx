@@ -138,35 +138,43 @@ export default function MySubmissions() {
     <div className="p-6">
       <div className="flex items-center justify-between gap-4 mb-4">
         <h1 className="text-2xl font-bold">Reports</h1>
-        <div className="flex items-center gap-3 w-full max-w-md">
-          <select
-            className="w-full border rounded-md p-2 text-sm"
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-          >
-            <option value="">All Projects</option>
-            {projectOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-end gap-3 w-full max-w-2xl">
+          <div className="flex-1">
+            <select
+              className="w-full border rounded-md p-2 text-sm"
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
+              <option value="">All Projects</option>
+              {projectOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <input
-            type="date"
-            className="w-full border rounded-md p-2 text-sm"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            aria-label="Start date"
-          />
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              className="border rounded-md p-2 text-sm"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              aria-label="Start date"
+            />
+          </div>
 
-          <input
-            type="date"
-            className="w-full border rounded-md p-2 text-sm"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            aria-label="End date"
-          />
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              className="border rounded-md p-2 text-sm"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              aria-label="End date"
+            />
+          </div>
         </div>
       </div>
 
