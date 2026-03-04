@@ -197,72 +197,64 @@ export default function Home() {
       )}
 
        {/* Summary Cards */}
-      <div class="max-w-[100rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
-        <div class="grid items-center lg:grid-cols-12 gap-6 lg:gap-12">
-          <div class="lg:col-span-2">
-            <div class="lg:pe-6 xl:pe-12">
-              <p class="text-6xl font-bold leading-10 text-primary">
-                {totalReports}               
-              </p>
-              <p class="mt-2 sm:mt-3 text-muted-foreground-1">Total Reports</p>
-            </div>
+      <div className="bg-white shadow rounded-lg p-4 mb-6">
+        <h3 class="text-lg font-bold text-foreground mb-4">Report Status</h3>
+        
+        <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
+          <div>
+            <p class="text-4xl font-bold text-primary">{totalReports}</p>
+            <p class="text-sm text-gray-600 mt-1">Total Reports</p>
+          </div>
+          <div class="w-full max-w-xs">
+            <select
+              class="w-full border border-gray-300 rounded-md p-2 text-sm"
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
+              <option value="">All Projects</option>
+              {projectOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{statusCounts.NEW}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">NEW</p>
           </div>
 
-          <div class="lg:col-span-8 relative lg:before:absolute lg:before:top-0 lg:before:-start-12 lg:before:w-px lg:before:h-full lg:before:bg-surface-1">
-            <div class="flex items-center justify-between gap-4">
-              <h4 class="text-lg sm:text-xl font-semibold text-foreground">Report Status</h4>
-              <div class="w-full max-w-xs">
-                <select
-                  class="w-full border rounded-md p-2 text-sm"
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                >
-                  <option value="">All Projects</option>
-                  {projectOptions.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div class="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 sm:gap-8">
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.NEW}</p>
-                <p class="mt-1 text-muted-foreground-1">NEW</p>
-              </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{statusCounts.OPEN}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">OPEN</p>
+          </div>
 
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.OPEN}</p>
-                <p class="mt-1 text-muted-foreground-1">OPEN</p>
-              </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{statusCounts.PENDING}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">PENDING</p>
+          </div>
 
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.PENDING}</p>
-                <p class="mt-1 text-muted-foreground-1">PENDING</p>
-              </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{statusCounts.RESOLVED}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">RESOLVED</p>
+          </div>
 
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.RESOLVED}</p>
-                <p class="mt-1 text-muted-foreground-1">RESOLVED</p>
-              </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{statusCounts.CLOSED}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">CLOSED</p>
+          </div>
 
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.CLOSED}</p>
-                <p class="mt-1 text-muted-foreground-1">CLOSED</p>
-              </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{pendingSync}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">PENDING SYNC</p>
+          </div>
 
-              <div>
-                <p class="text-3xl font-semibold text-primary">{pendingSync}</p>
-                <p class="mt-1 text-muted-foreground-1">PENDING SYNC</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{recentReports.length}</p>
-                <p class="mt-1 text-muted-foreground-1">RECENT REPORTS</p>
-              </div>
-
-            </div>
+          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+            <p class="text-2xl font-bold text-primary">{recentReports.length}</p>
+            <p class="mt-2 text-xs font-medium text-gray-600">RECENT REPORTS</p>
           </div>
         </div>
       </div>
