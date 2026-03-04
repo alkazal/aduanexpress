@@ -198,7 +198,7 @@ export default function Home() {
 
        {/* Summary Cards */}
       <div className="bg-white shadow rounded-lg p-4 mb-6">
-        <h3 className="text-xl font-semibold mb-4">Report Status</h3>
+        <h2 className="text-xl font-semibold mb-4">Report Status</h2>
         
         <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
           <div>
