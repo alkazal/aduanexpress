@@ -32,7 +32,7 @@ import Navigation from "./components/Navigation";
 
 function AppContent() {
   const location = useLocation();
-  const hideNavigation = location.pathname === "/login";
+  const hideNavigation = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/forgot-password" || location.pathname === "/reset-password";
 
   //usePushWorker();
 
@@ -45,7 +45,7 @@ function AppContent() {
     <>
       {!hideNavigation && <Navigation />}
 
-      <div className="pb-20 md:pb-0"> 
+      <div className="pb-20 md:pb-0 min-h-screen bg-bg-primary"> 
 
         <Routes>
           {/* Public routes */}
