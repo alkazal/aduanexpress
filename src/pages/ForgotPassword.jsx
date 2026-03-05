@@ -27,8 +27,15 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4 py-8">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+
+        {/* Logo and Title */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-lg font-semibold">AE</span>
+          </div>
+        </div>
 
         <h1 className="text-2xl font-bold text-center mb-6">Forgot Password</h1>
 
@@ -37,7 +44,7 @@ export default function ForgotPassword() {
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
             type="email"
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-border-light rounded-md"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

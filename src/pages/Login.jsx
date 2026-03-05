@@ -274,15 +274,31 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        {/* Logo and Title */}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4 py-8">
+      {/* Hero Section with Logo and Description */}
+      <div className="w-full max-w-md mb-8 text-center">
+        {/* Logo with glow effect */}
         <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg font-semibold">AE</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow">
+            <span className="text-white text-3xl font-bold">AE</span>
           </div>
-          <h1 className="text-2xl font-bold">AduanExpress</h1>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              AduanExpress
+            </h1>
+          </div>
         </div>
+        
+        {/* Description with accent */}
+        <div>
+          <p className="text-gray-700 text-sm leading-relaxed font-medium">
+            A platform that enables you to connect with us to manage and respond to reports or complaints in a systematic and efficient manner.
+          </p>
+        </div>
+      </div>
+
+      {/* Login Card */}
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
 
         {/* Email */}
         <div className="mb-4">
@@ -317,15 +333,15 @@ export default function Login() {
         </button>
 
         <div className="my-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-border-light" />
           <span className="text-xs text-gray-500">OR</span>
-          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-border-light" />
         </div>
 
         {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
-          className="w-full border border-gray-300 py-2 rounded-md hover:bg-gray-50 font-medium"
+          className="w-full border border-border-light py-2 rounded-md hover:bg-bg-primary font-medium"
         >
           Continue with Google
         </button>

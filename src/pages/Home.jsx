@@ -180,7 +180,7 @@ export default function Home() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-2">
+      <h1 className="text-2xl font-bold mb-6">
         Welcome, {user?.email ?? "User"}!
       </h1>
 
@@ -200,14 +200,14 @@ export default function Home() {
       <div className="bg-white shadow rounded-lg p-4 mb-6">
         <h2 className="text-xl font-semibold mb-4">Report Status</h2>
         
-        <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
+        <div class="flex items-center justify-between gap-4 mb-6 pb-6 border-b border-border-light">
           <div>
             <p class="text-4xl font-bold text-primary">{totalReports}</p>
             <p class="text-sm text-gray-600 mt-1">Total Reports</p>
           </div>
           <div class="w-full max-w-xs">
             <select
-              class="w-full border border-gray-300 rounded-md p-2 text-sm"
+              class="w-full border border-border-light rounded-md p-2 text-sm"
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
@@ -222,37 +222,37 @@ export default function Home() {
         </div>
 
         <div class="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{statusCounts.NEW}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">NEW</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{statusCounts.OPEN}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">OPEN</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{statusCounts.PENDING}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">PENDING</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{statusCounts.RESOLVED}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">RESOLVED</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{statusCounts.CLOSED}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">CLOSED</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{pendingSync}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">PENDING SYNC</p>
           </div>
 
-          <div class="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
+          <div class="border border-border-light rounded-lg p-4 bg-bg-primary text-center">
             <p class="text-2xl font-bold text-primary">{recentReports.length}</p>
             <p class="mt-2 text-xs font-medium text-gray-600">RECENT REPORTS</p>
           </div>
@@ -288,7 +288,7 @@ export default function Home() {
               <div 
                   key={r.id}
                   onClick={() => navigate(`/report/${r.id}`)}
-                  className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                  className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-bg-primary"
                 >
                 {r.attachment_url && (
                   <img
