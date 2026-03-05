@@ -147,7 +147,7 @@ export default function NewReport() {
 
   return (
     <div className="p-4 max-w-lg mx-auto">
-      <h2 className="text-xl font-semibold mb-4">New Report</h2>
+      <h2 className="text-xl font-bold mb-4">New Report</h2>
 
       {error && (
         <div className="bg-red-100 text-red-700 p-2 mb-3 rounded">{error}</div>
@@ -158,7 +158,7 @@ export default function NewReport() {
         <div>
           <label className="block font-medium">Report Type</label>
           <select
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={reportType}
             onChange={(e) => setReportType(e.target.value)}
           >
@@ -173,7 +173,7 @@ export default function NewReport() {
         <div>
           <label className="block font-medium">Project</label>
           <select
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             required
@@ -196,7 +196,7 @@ export default function NewReport() {
         <div>
           <label className="block font-medium">Title</label>
           <input
-            className="border p-2 rounded w-full"            
+            className="border border-border-light p-2 rounded w-full"            
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -207,7 +207,7 @@ export default function NewReport() {
         <div>
           <label className="block font-medium">Description</label>
           <textarea
-            className="border p-2 rounded w-full"
+            className="border border-border-light p-2 rounded w-full"
             rows="4"
             value={description}
             onChange={(e) => setDescription(e.target.value)}

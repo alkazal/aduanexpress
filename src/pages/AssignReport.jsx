@@ -210,7 +210,7 @@ export default function AssignReport() {
 
       <div className="grid gap-5">
         {reports.map((r) => (
-          <div key={r.id} className="p-4 bg-white shadow rounded-lg border">
+          <div key={r.id} className="p-4 bg-white shadow rounded-lg border border-border-light">
             <p className="font-bold text-lg">{r.title || "Untitled Report"}</p>
             <p className="text-sm text-gray-600">{r.description}</p>
 
@@ -226,7 +226,7 @@ export default function AssignReport() {
 
             <div className="flex gap-3 mt-3">
               <select
-                className="border p-2 rounded w-full"
+                className="border border-border-light p-2 rounded w-full"
                 value={selectedTech[r.id] || ""}
                 onChange={(e) =>
                   setSelectedTech({

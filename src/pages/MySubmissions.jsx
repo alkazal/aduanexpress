@@ -141,7 +141,7 @@ export default function MySubmissions() {
         <div className="flex items-end gap-3 w-full max-w-2xl">
           <div className="flex-1">
             <select
-              className="w-full border rounded-md p-2 text-sm"
+              className="w-full border border-border-light rounded-md p-2 text-sm"
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
@@ -158,7 +158,7 @@ export default function MySubmissions() {
             <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
-              className="border rounded-md p-2 text-sm"
+              className="border border-border-light rounded-md p-2 text-sm"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               aria-label="Start date"
@@ -169,7 +169,7 @@ export default function MySubmissions() {
             <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
             <input
               type="date"
-              className="border rounded-md p-2 text-sm"
+              className="border border-border-light rounded-md p-2 text-sm"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               aria-label="End date"
@@ -193,7 +193,7 @@ export default function MySubmissions() {
           <div 
               key={x.id}
               onClick={() => navigate(`/report/${x.id}`)}
-              className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+              className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-bg-primary"
             >
             {x.attachment_url && (
               <img

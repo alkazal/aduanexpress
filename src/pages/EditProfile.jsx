@@ -160,7 +160,7 @@ export default function EditProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Full Name</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Full name"
@@ -170,7 +170,7 @@ export default function EditProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Contact No</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={contactNo}
             onChange={(e) => setContactNo(e.target.value)}
             placeholder="Contact number"
@@ -180,7 +180,7 @@ export default function EditProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Agency Name</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={agencyName}
             onChange={(e) => setAgencyName(e.target.value)}
             placeholder="Agency name"
@@ -190,7 +190,7 @@ export default function EditProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Agency Role</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={agencyRole}
             onChange={(e) => setAgencyRole(e.target.value)}
             placeholder="Agency role"
@@ -201,7 +201,7 @@ export default function EditProfile() {
           <label className="block text-sm font-medium mb-1">User Role</label>
           {isManager ? (
             <select
-              className="w-full border rounded-md p-2"
+              className="w-full border border-border-light rounded-md p-2"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -211,7 +211,7 @@ export default function EditProfile() {
             </select>
           ) : (
             <input
-              className="w-full border rounded-md p-2 bg-gray-100"
+              className="w-full border border-border-light rounded-md p-2 bg-gray-100"
               value={role || "user"}
               readOnly
             />

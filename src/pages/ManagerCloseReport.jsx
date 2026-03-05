@@ -154,7 +154,7 @@ export default function ManagerCloseReport() {
 
       <div className="space-y-5">
         {reports.map((r) => (
-          <div key={r.id} className="bg-white shadow p-4 rounded-lg border">
+          <div key={r.id} className="bg-white shadow p-4 rounded-lg border border-border-light">
             <p className="text-sm text-gray-500">{r.ticket_no}</p>
 
             <h2 className="font-semibold text-lg">{r.title}</h2>

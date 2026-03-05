@@ -107,7 +107,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Full Name</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={profile.full_name || ""}
             onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
           />
@@ -116,7 +116,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
-            className="w-full border rounded-md p-2 bg-gray-100"
+            className="w-full border border-border-light rounded-md p-2 bg-gray-100"
             value={profile.email || "Unavailable"}
             readOnly
           />
@@ -125,7 +125,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Role</label>
           <select
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={profile.role || "user"}
             onChange={(e) => setProfile({ ...profile, role: e.target.value })}
           >
@@ -138,7 +138,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Contact No</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={profile.contact_no || ""}
             onChange={(e) => setProfile({ ...profile, contact_no: e.target.value })}
           />
@@ -147,7 +147,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Agency Name</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={profile.agency_name || ""}
             onChange={(e) => setProfile({ ...profile, agency_name: e.target.value })}
           />
@@ -156,7 +156,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Agency Role</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-light rounded-md p-2"
             value={profile.agency_role || ""}
             onChange={(e) => setProfile({ ...profile, agency_role: e.target.value })}
           />
@@ -165,7 +165,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Created At</label>
           <input
-            className="w-full border rounded-md p-2 bg-gray-100"
+            className="w-full border border-border-light rounded-md p-2 bg-gray-100"
             value={profile.created_at ? new Date(profile.created_at).toLocaleString() : "-"}
             readOnly
           />

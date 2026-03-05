@@ -270,7 +270,7 @@ export default function ReportDetails() {
           // );
             <div
                 key={att.id}
-                className="border rounded-md p-2 shadow-sm bg-white"
+                className="border border-border-light rounded-md p-2 shadow-sm bg-white"
               >
                 {/* Thumbnail Preview */}
                 {isImage ? (

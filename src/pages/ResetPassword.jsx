@@ -56,7 +56,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-bg-primary px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
 
         <h1 className="text-2xl font-bold text-center mb-6">Reset Password</h1>
@@ -68,7 +68,7 @@ export default function ResetPassword() {
           </label>
           <input
             type="password"
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-border-light rounded-md"
             placeholder="Enter new password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

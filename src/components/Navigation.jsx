@@ -133,7 +133,7 @@ export default function Navigation() {
       </nav>
 
       {/* BOTTOM TAB NAV (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-inner border-t z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-inner border-t border-border-light z-50">
         <div className="flex justify-around py-2">
           <NavLink to="/" className="flex flex-col items-center">
             <HomeIcon className="w-6 h-6" />

@@ -69,7 +69,7 @@ export default function UsersList() {
           <button
             key={u.id}
             onClick={() => navigate(`/users/${u.id}`)}
-            className="text-left bg-white shadow rounded-lg p-4 hover:bg-gray-50 border"
+            className="text-left bg-white shadow rounded-lg p-4 hover:bg-bg-primary border border-border-light"
           >
             <p className="font-semibold text-lg">{u.full_name || "Unnamed User"}</p>
             <p className="text-sm text-gray-500">Role: {u.role || "user"}</p>

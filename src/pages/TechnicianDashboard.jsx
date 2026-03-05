@@ -223,7 +223,7 @@ export default function TechnicianDashboard() {
         <h1 className="text-2xl font-bold">🔧 My Assigned Tickets</h1>
         <div className="flex items-center gap-3 w-full max-w-md">
           <select
-            className="w-full border rounded-md p-2 text-sm"
+            className="w-full border border-border-light rounded-md p-2 text-sm"
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
           >
@@ -237,7 +237,7 @@ export default function TechnicianDashboard() {
 
           <input
             type="date"
-            className="w-full border rounded-md p-2 text-sm"
+            className="w-full border border-border-light rounded-md p-2 text-sm"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             aria-label="Start date"
@@ -245,7 +245,7 @@ export default function TechnicianDashboard() {
 
           <input
             type="date"
-            className="w-full border rounded-md p-2 text-sm"
+            className="w-full border border-border-light rounded-md p-2 text-sm"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             aria-label="End date"
@@ -254,23 +254,23 @@ export default function TechnicianDashboard() {
       </div>
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-4">
-        <div className="bg-white shadow rounded-lg p-3 border">
+        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
           <p className="text-xs text-gray-500">NEW</p>
           <p className="text-xl font-semibold">{statusCounts.NEW}</p>
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border">
+        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
           <p className="text-xs text-gray-500">OPEN</p>
           <p className="text-xl font-semibold">{statusCounts.OPEN}</p>
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border">
+        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
           <p className="text-xs text-gray-500">PENDING</p>
           <p className="text-xl font-semibold">{statusCounts.PENDING}</p>
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border">
+        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
           <p className="text-xs text-gray-500">RESOLVED</p>
           <p className="text-xl font-semibold">{statusCounts.RESOLVED}</p>
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border">
+        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
           <p className="text-xs text-gray-500">CLOSED</p>
           <p className="text-xl font-semibold">{statusCounts.CLOSED}</p>
         </div>
@@ -303,7 +303,7 @@ export default function TechnicianDashboard() {
 
             <div className="flex gap-2 mt-4">
               <select
-                className="border p-2 rounded w-full"
+                className="border border-border-light p-2 rounded w-full"
                 value={statusUpdates[r.id] || ""}
                 onChange={(e) =>
                   setStatusUpdates({
