@@ -45,8 +45,11 @@ function AppContent() {
     <>
       {!hideNavigation && <Navigation />}
 
-      <div className="pb-20 md:pb-0 md:ml-64 min-h-screen bg-bg-primary"> 
-
+    <div
+      className={`pb-20 md:pb-0 min-h-screen bg-bg-primary ${
+        hideNavigation ? "" : "md:ml-64"
+      }`}
+    >
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
