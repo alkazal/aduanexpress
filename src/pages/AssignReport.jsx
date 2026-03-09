@@ -202,7 +202,15 @@ export default function AssignReport() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Assign Reports</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">Assign Reports</h1>
+          <p className="text-gray-500 text-sm">
+            View unassigned reports and assign to technicians
+          </p>
+        </div>
+      </div>
+
 
       {reports.length === 0 && (
         <p className="text-gray-500">No reports pending assignment</p>
