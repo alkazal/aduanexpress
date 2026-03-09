@@ -242,8 +242,8 @@ const projectChartData = Object.values(
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Total Reports</p>
             <p className="text-4xl font-bold text-gray-700">{totalReports}</p>
-            <div className="flex items-center gap-1 text-sm text-green-600">
-              <TrendingUp className="h-4 w-4" />
+            <div className="flex items-center gap-1 text-xs text-green-600">
+              <TrendingUp className="h-3 w-3" />
               <span>+{statusCounts.NEW} New</span>
             </div>
           </div>
@@ -260,8 +260,8 @@ const projectChartData = Object.values(
           <div className="flex flex-col gap-2">
               <p className="text-sm text-gray-500">Open</p>
               <p className="text-3xl font-bold text-gray-700">{statusCounts.OPEN}</p>
-              <p className="flex items-center gap-1 text-sm text-gray-500">
-                <TrendingDown className="h-4 w-4" />
+              <p className="flex items-center gap-1 text-xs text-gray-500">
+                <TrendingDown className="h-3 w-3" />
                 <span>{pendingSync > 0 ? `${pendingSync} Needs Sync` : "All Synced"}</span>
               </p>
           </div>
@@ -278,7 +278,7 @@ const projectChartData = Object.values(
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Pending</p>
             <p className="text-3xl font-bold text-red-600">{statusCounts.PENDING}</p>
-            <p className="text-sm text-red-500">Needs Attention</p>
+            <p className="text-xs text-red-500">Needs Attention</p>
           </div>
 
           {/* Icon */}
@@ -292,7 +292,7 @@ const projectChartData = Object.values(
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Resolved</p>
             <p className="text-3xl font-bold text-green-600">{statusCounts.RESOLVED}</p>
-            <p className="text-sm text-gray-500">Completed</p>
+            <p className="text-xs text-gray-500">Completed</p>
           </div>
 
           {/* Icon */}
@@ -307,7 +307,7 @@ const projectChartData = Object.values(
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Closed</p>
             <p className="text-3xl font-bold text-gray-700">{statusCounts.CLOSED}</p>
-            <p className="text-sm text-gray-500">No Further Action</p>
+            <p className="text-xs text-gray-500">No follow-up</p>
           </div>
 
           {/* Icon */}
