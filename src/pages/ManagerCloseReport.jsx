@@ -146,37 +146,59 @@ export default function ManagerCloseReport() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">📕 Close Reports</h1>
+      <h1 className="text-2xl font-bold mb-4">Close Reports</h1>
 
       {reports.length === 0 && (
         <p className="text-gray-500">No reports waiting for closure</p>
       )}
 
-      <div className="space-y-5">
-        {reports.map((r) => (
-          <div key={r.id} className="bg-white shadow p-4 rounded-lg border border-border-light">
-            <p className="text-sm text-gray-500">{r.ticket_no}</p>
+      <div className="space-y-4">
+      {reports.map((r) => (
+        <div
+          key={r.id}
+          className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
+        >
+          {/* Header */}
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <p className="text-xs text-gray-500">
+                #{r.ticket_no} • {new Date(r.updated_at).toLocaleDateString()}
+              </p>
+              <h2 className="font-semibold text-base">{r.title}</h2>
+            </div>
 
-            <h2 className="font-semibold text-lg">{r.title}</h2>
-            <p className="text-gray-700">{r.description}</p>
+            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
+              Resolved
+            </span>
+          </div>
 
-            <div className="text-sm text-gray-500 mt-2">
-              Assigned to:{" "}
+          {/* Description */}
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+            {r.description}
+          </p>
+
+          {/* Info Row */}
+          <div className="flex justify-between text-xs text-gray-500 mb-3">
+            <span>
+              Assigned:{" "}
               <b>{r.assigned_to_profile?.full_name || r.assigned_to}</b>
-            </div>
+            </span>
 
-            <div className="text-sm text-gray-500">
-              Reported by:{" "}
+            <span>
+              Reported:{" "}
               <b>{r.created_by_profile?.full_name || r.user_id}</b>
-            </div>
+            </span>
+          </div>
 
-            {/* Closing Notes */}
-            <label className="block mt-4 font-semibold text-sm">
+          {/* Closing Notes */}
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
               Closing Notes
             </label>
+
             <textarea
-              rows={3}
-              className="border w-full p-2 rounded"
+              rows={2}
+              className="w-full border border-gray-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
               placeholder="Enter final resolution details..."
               value={closeNotes[r.id] || ""}
               onChange={(e) =>
@@ -186,18 +208,20 @@ export default function ManagerCloseReport() {
                 })
               }
             />
-
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => closeReport(r)}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-              >
-                Close Report
-              </button>
-            </div>
           </div>
-        ))}
-      </div>
+
+          {/* Action */}
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={() => closeReport(r)}
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm"
+            >
+              Close Report
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
     </div>
   );
 }
