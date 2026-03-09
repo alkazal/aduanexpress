@@ -70,67 +70,66 @@ export default function Navigation() {
   };
 
   const linkClass = ({ isActive }) =>
+  `px-3 py-2 rounded-lg transition ${
     isActive
-      ? "text-blue-600 font-semibold"
-      : "text-gray-600";
+      ? "bg-blue-100 text-blue-600 font-semibold"
+      : "text-gray-600 hover:bg-gray-100"
+  }`;
 
   return (
     <>
-      {/* TOP NAV (Desktop) */}
-      <nav className="hidden md:flex items-center justify-between bg-white shadow px-6 py-3 sticky top-0 z-50">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg font-semibold">AE</span>
-          </div>
-          <span className="text-xl font-bold text-gray-800">AduanExpress</span>
+    {/* SIDEBAR NAV (Desktop) */}
+    <nav className="hidden md:flex flex-col w-64 h-screen bg-white shadow-lg fixed left-0 top-0 z-50">
+
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-6 py-6 border-b">
+        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+          <span className="text-white text-lg font-semibold">AE</span>
         </div>
+        <span className="text-xl font-bold text-gray-800">AduanExpress</span>
+      </div>
 
-        <div className="flex space-x-6 text-lg">
-          <NavLink to="/" className={linkClass}>Dashboard</NavLink>
-          <NavLink to="/submissions" className={linkClass}>Reports</NavLink>     
-          
-          {role === "manager" && (
-            <NavLink to="/assign" className={linkClass}>
-              Assign Reports
-            </NavLink>
-          )}
+      {/* Navigation Links */}
+      <div className="flex flex-col gap-4 px-6 py-6 text-lg">
 
-          {role === "manager" && (
-            <NavLink to="/close-report" className={linkClass}>
-              Close Reports
-            </NavLink>
-          )}
+        <NavLink to="/" className={linkClass}>Dashboard</NavLink>
 
-          {role === "manager" && (
-            <NavLink to="/users" className={linkClass}>
-              Users
-            </NavLink>
-          )}
+        <NavLink to="/submissions" className={linkClass}>Reports</NavLink>
 
-          {role === "technician" && (
-            <NavLink to="/technician" className={linkClass}>
-              Technician Board
-            </NavLink>
-          )}
+        {role === "manager" && (
+          <NavLink to="/assign" className={linkClass}>Assign Reports</NavLink>
+        )}
 
-          <NavLink to="/profile" className={linkClass}>Profile</NavLink>
+        {role === "manager" && (
+          <NavLink to="/close-report" className={linkClass}>Close Reports</NavLink>
+        )}
 
-          <NavLink to="/new-report" className={linkClass}>New Report</NavLink>
+        {role === "manager" && (
+          <NavLink to="/users" className={linkClass}>Users</NavLink>
+        )}
 
-          
+        {role === "technician" && (
+          <NavLink to="/technician" className={linkClass}>Technician Board</NavLink>
+        )}
 
+        <NavLink to="/profile" className={linkClass}>Profile</NavLink>
 
-        </div>
+        <NavLink to="/new-report" className={linkClass}>New Report</NavLink>
 
+      </div>
+
+      {/* Logout bottom */}
+      <div className="mt-auto px-6 py-6 border-t">
         <button
           onClick={handleLogout}
-          className="text-red-600 hover:text-red-700 font-medium flex items-center space-x-2"
+          className="text-red-600 hover:text-red-700 font-medium flex items-center gap-2"
         >
-          <ArrowRightIcon  className="w-5 h-5" />
-          <span>Logout</span>
+          <ArrowRightIcon className="w-5 h-5" />
+          Logout
         </button>
-      </nav>
+      </div>
+
+    </nav>
 
       {/* BOTTOM TAB NAV (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-inner border-t border-border-light z-50">
