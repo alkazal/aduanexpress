@@ -127,7 +127,7 @@ export default function ReportDetails() {
   // ----------------------------------------------------
   // BUILD STATUS TIMELINE (NEW CLEAN VERSION)
   // ----------------------------------------------------
-  const timeline = [];
+
 
   // 1) Submitted event
   // timeline.push({
@@ -148,24 +148,27 @@ export default function ReportDetails() {
   // }
 
   // 3) Status change history from DB (deduped)
-  const rawHistory = report.history || report._status_changes || [];
-  const seenHistoryKeys = new Set();
+  const rawHistory = [
+    ...(report.history || []),
+    ...(report._status_changes || [])
+  ];
+
+  const unique = new Map();
 
   rawHistory.forEach((h) => {
-    const key = h.id
-      ? `id:${h.id}`
-      : `k:${h.old_status}|${h.new_status}|${h.changed_at}|${h.changed_by}|${h.changed_by_name}|${h.comment}`;
+    const key = `${h.old_status}-${h.new_status}-${h.changed_at}`;
 
-    if (seenHistoryKeys.has(key)) return;
-    seenHistoryKeys.add(key);
-
-    timeline.push({
-      label: `${h.old_status} → ${h.new_status}`,
-      at: h.changed_at,
-      by: h.changed_by_name || h.changed_by,
-      comment: h.comment
-    });
+    if (!unique.has(key)) {
+      unique.set(key, {
+        label: `${h.old_status} → ${h.new_status}`,
+        at: h.changed_at,
+        by: h.changed_by_name || h.changed_by,
+        comment: h.comment
+      });
+    }
   });
+
+  const timeline = Array.from(unique.values());
 
   // 4) Closed (manager only)
   // if (report.closed_at) {
@@ -181,7 +184,9 @@ export default function ReportDetails() {
   timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+
       <button
         onClick={() => navigate(-1)}
         className="text-blue-600 underline mb-4"
@@ -189,45 +194,59 @@ export default function ReportDetails() {
         ← Back
       </button>
 
-      <h1 className="text-2xl font-bold mb-2">{report.title}</h1>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <h1 className="text-2xl font-bold mb-2">
+          #{report.ticket_no}
+        </h1>
 
-      <p className="text-gray-700">{report.description}</p>
+        <p className="text-lg text-gray-700">
+          {report.title}
+        </p>
 
-      <div className="mt-3 text-sm text-gray-600">
-        <p>
-          <b>Ticket No:</b> {report.ticket_no}
-        </p>
-        <p>
-          <b>Status:</b>{" "}
-          <span className="text-blue-600">{report.status}</span>
-        </p>
-        {(report.project_name || report.project_id) && (
-          <p>
-            <b>Project:</b>{" "}
-            {report.project_name || report.project_id}
-          </p>
-        )}
-        <p>
-          <b>Submitted by:</b>{" "}
-          {report.reporter?.full_name || report.reporter_name || report.user_id}
-        </p>
-        {report.technician && (
-          <p>
-            <b>Assigned to:</b> {report.technician?.full_name || report.technician_name}
-          </p>
-        )}
+        <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+          {report.status}
+        </span>
       </div>
+
+            <div className="bg-white border rounded-xl p-6 shadow-sm mt-4">
+        <h2 className="font-semibold mb-2">Description</h2>
+
+        <p className="text-gray-700">
+          {report.description}
+        </p>
+
+        <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+
+          <div>
+            <p className="text-gray-500">Project</p>
+            <p className="font-medium">
+              {report.project_name || report.project_id}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Submitted By</p>
+            <p className="font-medium">
+              {report.reporter?.full_name || report.reporter_name}
+            </p>
+          </div>
+
+      </div>
+    </div>
 
       {/* ----------------------------------------------------
           ATTACHMENTS
       ---------------------------------------------------- */}
-      <h2 className="text-xl font-semibold mt-6 mb-2">
-        Attachments ({attachments.length})
-      </h2>
+      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+
+<h2 className="text-xl font-semibold mb-4">
+  Attachments ({attachments.length})
+</h2>
 
       {attachments.length === 0 && (
         <p className="text-gray-500 text-sm">No attachments</p>
       )}
+    
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {attachments.map((att) => {
@@ -246,8 +265,7 @@ export default function ReportDetails() {
               // Convert blob to URL
               fileUrl = URL.createObjectURL(att.file || att.file_data);
             }
-
-
+        
           return (
           //   <div
           //     key={att.id}
@@ -324,7 +342,7 @@ export default function ReportDetails() {
             );
         })}
       </div>
-
+      </div>
 
        {/* EDIT BUTTON */}
       <button
@@ -420,19 +438,24 @@ export default function ReportDetails() {
           </div>
         </div>
       )}
-
+</div>
 
       {/* ----------------------------------------------------
           STATUS TIMELINE
       ---------------------------------------------------- */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">Status Timeline</h2>
-      <div className="relative border-l-4 border-blue-600 pl-4 space-y-6">
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+
+      <h2 className="text-lg font-semibold mb-4">
+        Activity Timeline
+      </h2>
+
+      <div className="relative border-l-2 border-blue-500 pl-6 space-y-10">
 
         {timeline.map((item, i) => (
           <div key={i} className="relative">
 
             {/* Dot */}
-            <div className="absolute -left-3 top-1 w-4 h-4 bg-blue-600 rounded-full border-2 border-white"></div>
+            <div className="absolute -left-[10px] top-2.5 w-2 h-2 bg-blue-600 rounded-full"></div>
 
             {/* Title */}
             <p className="font-semibold">{item.label}</p>
@@ -454,6 +477,7 @@ export default function ReportDetails() {
         ))}
 
       </div>
+     </div> 
 
       
     </div>
