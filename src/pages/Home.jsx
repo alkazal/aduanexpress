@@ -370,9 +370,13 @@ const projectChartData = Object.values(
         <h2 className="text-xl font-semibold mb-4">Reports by Project</h2>
 
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={projectChartData}>
-            <XAxis dataKey="project" />
-            <YAxis allowDecimals={false} />
+          <BarChart
+            data={projectChartData}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+          >
+            <XAxis type="number" allowDecimals={false} />
+            <YAxis type="category" dataKey="project" />
             <Tooltip />
             <Legend />
             <Bar dataKey="count" fill="#6366f1" />
