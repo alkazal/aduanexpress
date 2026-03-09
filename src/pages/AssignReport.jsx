@@ -202,7 +202,7 @@ export default function AssignReport() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">📋 Assign Reports</h1>
+      <h1 className="text-2xl font-bold mb-4">Assign Reports</h1>
 
       {reports.length === 0 && (
         <p className="text-gray-500">No reports pending assignment</p>
@@ -210,23 +210,41 @@ export default function AssignReport() {
 
       <div className="grid gap-5">
         {reports.map((r) => (
-          <div key={r.id} className="p-4 bg-white shadow rounded-lg border border-border-light">
-            <p className="font-bold text-lg">{r.title || "Untitled Report"}</p>
-            <p className="text-sm text-gray-600">{r.description}</p>
-
-            {r.project_name && (
-              <div className="text-sm text-gray-500 mt-1">
-                Project: {r.project_name}
+          <div
+            key={r.id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="font-semibold text-sm">{r.title || "Untitled Report"}</p>
+                <p className="text-xs text-gray-500">
+                  #{r.ticket_no} • {new Date(r.created_at).toLocaleDateString()}
+                </p>
               </div>
-            )}
 
-            <div className="text-sm text-gray-500 mt-1">
-              Submitted by: {r.reporter?.full_name || r.reporter_name || r.user_id}
+              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-medium">
+                Submitted
+              </span>
             </div>
 
-            <div className="flex gap-3 mt-3">
+            {/* Description */}
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+              {r.description}
+            </p>
+
+            {/* Info Row */}
+            <div className="flex justify-between text-xs text-gray-500 mb-3">
+              <span>Project: {r.project_name || "-"}</span>
+              <span>
+                By: {r.reporter?.full_name || r.reporter_name || r.user_id}
+              </span>
+            </div>
+
+            {/* Assign Section */}
+            <div className="flex gap-2">
               <select
-                className="border border-border-light p-2 rounded w-full"
+                className="border border-gray-200 rounded-md px-2 py-1 text-sm flex-1"
                 value={selectedTech[r.id] || ""}
                 onChange={(e) =>
                   setSelectedTech({
@@ -245,7 +263,7 @@ export default function AssignReport() {
 
               <button
                 onClick={() => handleAssign(r.id)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm"
               >
                 Assign
               </button>
