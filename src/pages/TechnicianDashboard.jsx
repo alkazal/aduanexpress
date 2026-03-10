@@ -4,12 +4,12 @@ import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 
-function statusColor(status) {
-  if (status === "Open") return "text-yellow-600";
-  if (status === "Pending") return "text-orange-600";
-  if (status === "Resolved") return "text-green-600";
-  return "text-gray-600";
-}
+import {
+  Inbox,
+  Clock,
+  AlertCircle,
+  CheckCircle
+} from "lucide-react";
 
 export default function TechnicianDashboard() {
   const [reports, setReports] = useState([]);
@@ -208,19 +208,34 @@ export default function TechnicianDashboard() {
     return matchProject && matchStart && matchEnd;
   });
 
-  const statusCounts = filteredReports.reduce(
-    (acc, r) => {
-      const key = (r.status || "").toUpperCase();
-      if (key) acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    },
-    { NEW: 0, OPEN: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
-  );
+  const statusCounts = {
+    OPEN: filteredReports.filter(r => r.status === "Open").length,
+    PENDING: filteredReports.filter(r => r.status === "Pending").length,
+    RESOLVED: filteredReports.filter(r => r.status === "Resolved").length
+  };
+
+  function statusColor(status) {
+    if (status === "Open")
+      return "bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full";
+
+    if (status === "Pending")
+      return "bg-orange-100 text-orange-700 px-2 py-1 rounded-full";
+
+    if (status === "Resolved")
+      return "bg-green-100 text-green-700 px-2 py-1 rounded-full";
+
+    return "bg-gray-100 text-gray-700 px-2 py-1 rounded-full";
+  }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between gap-4 mb-4">
-        <h1 className="text-2xl font-bold">🔧 My Assigned Tickets</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Technician Dashboard</h1>
+          <p className="text-gray-500 text-sm">
+            Update your personal information 
+          </p>
+        </div>
         <div className="flex items-center gap-3 w-full max-w-md">
           <select
             className="w-full border border-border-light rounded-md p-2 text-sm"
@@ -253,88 +268,171 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-4">
-        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
-          <p className="text-xs text-gray-500">NEW</p>
-          <p className="text-xl font-semibold">{statusCounts.NEW}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+        {/* Assigned Tickets */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Assigned Tickets</p>
+            <p className="text-3xl font-bold text-gray-700">
+              {filteredReports.length}
+            </p>
+          </div>
+
+          <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+            <Inbox className="h-6 w-6 text-blue-600" />
+          </div>
+
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
-          <p className="text-xs text-gray-500">OPEN</p>
-          <p className="text-xl font-semibold">{statusCounts.OPEN}</p>
+
+        {/* Open */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Open</p>
+            <p className="text-3xl font-bold text-gray-700">
+              {statusCounts.OPEN}
+            </p>
+          </div>
+
+          <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+            <Clock className="h-6 w-6 text-purple-600" />
+          </div>
+
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
-          <p className="text-xs text-gray-500">PENDING</p>
-          <p className="text-xl font-semibold">{statusCounts.PENDING}</p>
+
+        {/* Pending */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Pending</p>
+            <p className="text-3xl font-bold text-red-600">
+              {statusCounts.PENDING}
+            </p>
+          </div>
+
+          <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+            <AlertCircle className="h-6 w-6 text-red-600" />
+          </div>
+
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
-          <p className="text-xs text-gray-500">RESOLVED</p>
-          <p className="text-xl font-semibold">{statusCounts.RESOLVED}</p>
+
+        {/* Resolved */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Resolved</p>
+            <p className="text-3xl font-bold text-green-600">
+              {statusCounts.RESOLVED}
+            </p>
+          </div>
+
+          <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+
         </div>
-        <div className="bg-white shadow rounded-lg p-3 border border-border-light">
-          <p className="text-xs text-gray-500">CLOSED</p>
-          <p className="text-xl font-semibold">{statusCounts.CLOSED}</p>
-        </div>
+
       </div>
 
       {filteredReports.length === 0 && (
         <p className="text-gray-500">No assigned reports</p>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {filteredReports.map((r) => (
-          <div key={r.id} className="bg-white shadow rounded-lg p-4 border">
-            <p className="text-sm text-gray-500">{r.ticket_no}</p>
-            <p className="font-semibold text-lg">{r.title}</p>
-            <p className="text-gray-600">{r.description}</p>
+      <div className="bg-white shadow rounded-lg overflow-hidden mt-4">
 
-            {r.project_name && (
-              <p className="text-sm text-gray-500 mt-1">
-                Project: {r.project_name}
-              </p>
-            )}
+      <table className="w-full text-sm text-left">
 
-            <p className="text-sm mt-2">
-              <b>Status:</b>{" "}
-              <span className={`font-semibold ${statusColor(r.status)}`}>
-                {r.status}
-              </span>
+        <thead className="bg-gray-50 text-gray-600">
+          <tr>
+            <th className="px-4 py-3">Ticket ID</th>
+            <th className="px-4 py-3">Subject</th>
+            <th className="px-4 py-3">Project</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Created</th>
+            <th className="px-4 py-3">Action</th>
+          </tr>
+        </thead>
 
-            </p>
+        <tbody>
 
-            <div className="flex gap-2 mt-4">
-              <select
-                className="border border-border-light p-2 rounded w-full"
-                value={statusUpdates[r.id] || ""}
-                onChange={(e) =>
-                  setStatusUpdates({
-                    ...statusUpdates,
-                    [r.id]: e.target.value
-                  })
-                }
-              >
-                <option value="">Change status</option>
-                <option value="Open">Open</option>
-                <option value="Pending">Pending</option>
-                <option value="Resolved">Resolved</option>
-              </select>
+          {filteredReports.map((r) => (
 
-              <button
-                onClick={() => updateStatus(r.id)}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded"
-              >
-                Update
-              </button>
-            </div>
-
-            <button
-              onClick={() => navigate(`/report/${r.id}`)}
-              className="mt-3 w-full text-blue-600 text-sm underline"
+            <tr
+              key={r.id}
+              className="border-t hover:bg-gray-50"
             >
-              View Details
-            </button>
-          </div>
-        ))}
-      </div>
+
+              <td className="px-4 py-3 font-medium">
+                #{r.ticket_no}
+              </td>
+
+              <td className="px-4 py-3">
+                <div className="font-semibold">{r.title}</div>
+                <div className="text-gray-500 text-xs">
+                  {r.description?.slice(0,40)}
+                </div>
+              </td>
+
+              <td className="px-4 py-3">
+                {r.project_name || "-"}
+              </td>
+
+              <td className="px-4 py-3">
+              <span className={`text-xs ${statusColor(r.status)}`}>
+                  {r.status}
+                </span>
+              </td>
+
+              <td className="px-4 py-3 text-gray-500">
+                {new Date(r.created_at).toLocaleDateString()}
+              </td>
+
+              <td className="px-4 py-3 flex gap-2">
+
+                <select
+                  className="border border-border-light p-1 rounded text-sm"
+                  value={statusUpdates[r.id] || ""}
+                  onChange={(e) =>
+                    setStatusUpdates({
+                      ...statusUpdates,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Change</option>
+                  <option value="Open">Open</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+
+                <button
+                  onClick={() => updateStatus(r.id)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                >
+                  Update
+                </button>
+
+                <button
+                  onClick={() => navigate(`/report/${r.id}`)}
+                  className="text-blue-600 underline text-xs"
+                >
+                  View
+                </button>
+
+              </td>
+
+            </tr>
+
+          ))}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
     </div>
   );
 }
