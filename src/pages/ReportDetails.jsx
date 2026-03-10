@@ -32,6 +32,11 @@ export default function ReportDetails() {
 
   const [loading, setLoading] = useState(true);
 
+  const [publicReply, setPublicReply] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [comments, setComments] = useState([]);
+  const [activeTab, setActiveTab] = useState("public");
+
   // ----------------------------------------------------
   // LOAD REPORT (Offline first, then online fallback)
   // ----------------------------------------------------
@@ -105,6 +110,16 @@ export default function ReportDetails() {
       }
 
       setLoading(false);
+
+      const { data: commentData } = await supabase
+      .from("report_comments")
+      .select("*")
+      .eq("report_id", id)
+      .order("created_at", { ascending: false });
+
+    if (commentData) {
+      setComments(commentData);
+    }
     }
 
     load();
@@ -183,6 +198,46 @@ export default function ReportDetails() {
   // FINAL SORT
   timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
+  async function sendPublicReply() {
+    if (!publicReply.trim()) return;
+
+    const { data, error } = await supabase
+      .from("report_comments")
+      .insert({
+        report_id: id,
+        message: publicReply,
+        user_name: "Technician",
+        is_internal: false
+      })
+      .select()
+      .single();
+
+    if (!error) {
+      setComments(prev => [data, ...prev]);
+      setPublicReply("");
+    }
+  }
+
+  async function sendInternalNote() {
+    if (!internalNote.trim()) return;
+
+    const { data, error } = await supabase
+      .from("report_comments")
+      .insert({
+        report_id: id,
+        message: internalNote,
+        user_name: "Technician",
+        is_internal: true
+      })
+      .select()
+      .single();
+
+    if (!error) {
+      setComments(prev => [data, ...prev]);
+      setInternalNote("");
+    }
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
@@ -239,9 +294,9 @@ export default function ReportDetails() {
       ---------------------------------------------------- */}
       <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
 
-<h2 className="text-xl font-semibold mb-4">
-  Attachments ({attachments.length})
-</h2>
+      <h2 className="text-xl font-semibold mb-4">
+        Attachments ({attachments.length})
+      </h2>
 
       {attachments.length === 0 && (
         <p className="text-gray-500 text-sm">No attachments</p>
@@ -342,6 +397,109 @@ export default function ReportDetails() {
             );
         })}
       </div>
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+
+      <h2 className="text-lg font-semibold mb-4">Communication</h2>
+
+      {/* Tabs */}
+      <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setActiveTab("public")}
+          className={`flex-1 py-2 text-sm rounded ${
+            activeTab === "public" ? "bg-white shadow" : ""
+          }`}
+        >
+          Public Reply
+        </button>
+
+        <button
+          onClick={() => setActiveTab("internal")}
+          className={`flex-1 py-2 text-sm rounded ${
+            activeTab === "internal" ? "bg-white shadow" : ""
+          }`}
+        >
+          Internal Notes
+        </button>
+      </div>
+
+      {/* PUBLIC REPLY */}
+      {activeTab === "public" && (
+        <>
+          <textarea
+            value={publicReply}
+            onChange={(e) => setPublicReply(e.target.value)}
+            placeholder="Type your response to the user..."
+            className="w-full border rounded-lg p-3 text-sm"
+            rows={4}
+          />
+
+          <button
+            onClick={sendPublicReply}
+            className="mt-3 bg-black text-white px-4 py-2 rounded"
+          >
+            Send Response
+          </button>
+
+          {/* Previous Public Replies */}
+          <div className="mt-6 space-y-3">
+            {comments
+              .filter(c => !c.is_internal)
+              .map(c => (
+                <div key={c.id} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium">{c.user_name}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(c.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-700">{c.message}</p>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
+      {/* INTERNAL NOTES */}
+      {activeTab === "internal" && (
+        <>
+          <textarea
+            value={internalNote}
+            onChange={(e) => setInternalNote(e.target.value)}
+            placeholder="Add internal troubleshooting notes..."
+            className="w-full border rounded-lg p-3 text-sm"
+            rows={4}
+          />
+
+          <button
+            onClick={sendInternalNote}
+            className="mt-3 bg-gray-800 text-white px-4 py-2 rounded"
+          >
+            Add Internal Note
+          </button>
+
+          {/* Previous Internal Notes */}
+          <div className="mt-6 space-y-3">
+            {comments
+              .filter(c => c.is_internal)
+              .map(c => (
+                <div key={c.id} className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium">{c.user_name}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(c.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-700">{c.message}</p>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
       </div>
 
        {/* EDIT BUTTON */}
