@@ -416,7 +416,7 @@ export default function TechnicianDashboard() {
 
                 <button
                   onClick={() => navigate(`/report/${r.id}`)}
-                  className="text-blue-600 underline text-xs"
+                  className="bg-blue-600 text-white text-xs px-3 py-1 rounded"
                 >
                   View
                 </button>
