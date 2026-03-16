@@ -6,6 +6,9 @@ import HomeIcon from "@heroicons/react/24/outline/HomeIcon";
 import ClipboardDocumentListIcon from "@heroicons/react/24/outline/ClipboardDocumentListIcon";
 import PlusCircleIcon from "@heroicons/react/24/outline/PlusCircleIcon";
 import ArrowRightIcon from "@heroicons/react/24/outline/ArrowRightIcon"; 
+import UserCircleIcon from "@heroicons/react/24/outline/UserCircleIcon";
+import WrenchScrewdriverIcon from "@heroicons/react/24/outline/WrenchScrewdriverIcon";
+import UsersIcon from "@heroicons/react/24/outline/UsersIcon";
 
 export default function Navigation() {
   const [role, setRole] = useState(null);
@@ -76,6 +79,11 @@ export default function Navigation() {
       : "text-gray-600 hover:bg-gray-100"
   }`;
 
+  const mobileLinkClass = ({ isActive }) =>
+  `flex flex-col items-center transition ${
+    isActive ? "text-blue-600" : "text-gray-600"
+  }`;
+
   return (
     <>
     {/* SIDEBAR NAV (Desktop) */}
@@ -134,43 +142,43 @@ export default function Navigation() {
       {/* BOTTOM TAB NAV (Mobile) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-inner border-t border-border-light z-50">
         <div className="flex justify-around py-2">
-          <NavLink to="/" className="flex flex-col items-center">
+          <NavLink to="/" className={mobileLinkClass}>
             <HomeIcon className="w-6 h-6" />
             <span className="text-xs">Home</span>
           </NavLink>
 
-          <NavLink to="/submissions" className="flex flex-col items-center">
+          <NavLink to="/submissions" className={mobileLinkClass}>
             <ClipboardDocumentListIcon className="w-6 h-6" />
             <span className="text-xs">Reports</span>
           </NavLink>
 
           {role === "technician" && (
-            <NavLink to="/technician" className="flex flex-col items-center">
-              <ClipboardDocumentListIcon className="w-6 h-6" />
+            <NavLink to="/technician" className={mobileLinkClass}>
+              <WrenchScrewdriverIcon className="w-6 h-6" />
                 <span className="text-xs">Tasks</span>
             </NavLink>
           )}
 
           {role === "manager" && (
-            <NavLink to="/assign" className="flex flex-col items-center">
-              <ClipboardDocumentListIcon className="w-6 h-6" />
+            <NavLink to="/assign" className={mobileLinkClass}>
+              <WrenchScrewdriverIcon className="w-6 h-6" />
                 <span className="text-xs">Assign</span>
             </NavLink>
           )}
 
           {role === "manager" && (
-            <NavLink to="/users" className="flex flex-col items-center">
-              <ClipboardDocumentListIcon className="w-6 h-6" />
+            <NavLink to="/users" className={mobileLinkClass}>
+              <UsersIcon className="w-6 h-6" />
               <span className="text-xs">Users</span>
             </NavLink>
           )}
 
-          <NavLink to="/profile" className="flex flex-col items-center">
-            <ClipboardDocumentListIcon className="w-6 h-6" />
+          <NavLink to="/profile" className={mobileLinkClass}>
+            <UserCircleIcon className="w-6 h-6" />
             <span className="text-xs">Profile</span>
           </NavLink>
 
-          <NavLink to="/new-report" className="flex flex-col items-center">
+          <NavLink to="/new-report" className={mobileLinkClass}>
             <PlusCircleIcon className="w-6 h-6" />
             <span className="text-xs">New</span>
           </NavLink>
