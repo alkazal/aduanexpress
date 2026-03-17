@@ -113,7 +113,13 @@ export default function ReportDetails() {
 
       const { data: commentData } = await supabase
       .from("report_comments")
-      .select("*")
+      .select(`
+        *,
+        user:user_id (
+          full_name,
+          role
+        )
+      `)
       .eq("report_id", id)
       .order("created_at", { ascending: false });
 
@@ -201,13 +207,19 @@ export default function ReportDetails() {
   async function sendPublicReply() {
     if (!publicReply.trim()) return;
 
+    // Get logged-in user FIRST
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    // Then insert
     const { data, error } = await supabase
       .from("report_comments")
       .insert({
         report_id: id,
-        message: publicReply,
-        user_name: "Technician",
-        is_internal: false
+        message: publicReply,   
+        user_id: user.id,
+        is_internal: false      
       })
       .select()
       .single();
@@ -221,13 +233,17 @@ export default function ReportDetails() {
   async function sendInternalNote() {
     if (!internalNote.trim()) return;
 
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
     const { data, error } = await supabase
       .from("report_comments")
       .insert({
         report_id: id,
-        message: internalNote,
-        user_name: "Technician",
-        is_internal: true
+        message: internalNote,  
+        user_id: user.id,
+        is_internal: true       
       })
       .select()
       .single();
@@ -449,7 +465,9 @@ export default function ReportDetails() {
               .map(c => (
                 <div key={c.id} className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex justify-between mb-1">
-                    <span className="font-medium">{c.user_name}</span>
+                    <span className="font-medium">
+                      {c.user?.full_name || "Unknown"}
+                    </span>
                     <span className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
                     </span>
@@ -487,7 +505,9 @@ export default function ReportDetails() {
               .map(c => (
                 <div key={c.id} className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
                   <div className="flex justify-between mb-1">
-                    <span className="font-medium">{c.user_name}</span>
+                    <span className="font-medium">
+                      {c.user?.full_name || "Unknown"}
+                    </span>
                     <span className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
                     </span>
