@@ -37,6 +37,33 @@ export default function ReportDetails() {
   const [comments, setComments] = useState([]);
   const [activeTab, setActiveTab] = useState("public");
 
+  const [userRole, setUserRole] = useState(null);
+  const isStaff = userRole === "manager" || userRole === "technician";
+  const [roleLoading, setRoleLoading] = useState(true);
+
+  useEffect(() => {
+    async function getUserRole() {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (data) {
+        setUserRole(data.role);
+      }
+      setRoleLoading(false);
+    }
+
+    getUserRole();
+  }, []);
+  
   // ----------------------------------------------------
   // LOAD REPORT (Offline first, then online fallback)
   // ----------------------------------------------------
@@ -430,14 +457,16 @@ export default function ReportDetails() {
           Public Reply
         </button>
 
-        <button
-          onClick={() => setActiveTab("internal")}
-          className={`flex-1 py-2 text-sm rounded ${
-            activeTab === "internal" ? "bg-white shadow" : ""
-          }`}
-        >
-          Internal Notes
-        </button>
+        {isStaff && (
+          <button
+            onClick={() => setActiveTab("internal")}
+            className={`flex-1 py-2 text-sm rounded ${
+              activeTab === "internal" ? "bg-white shadow" : ""
+            }`}
+          >
+            Internal Notes
+          </button>
+        )}
       </div>
 
       {/* PUBLIC REPLY */}
