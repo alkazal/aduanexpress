@@ -151,10 +151,11 @@ export default function MySubmissions() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <h1 className="text-2xl font-bold">Reports</h1>
-        <div className="flex items-end gap-3 w-full max-w-2xl">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
+
+          <div className="w-full sm:flex-1">
             <select
               className="w-full border border-border-light rounded-md p-2 text-sm"
               value={selectedProject}
@@ -169,7 +170,7 @@ export default function MySubmissions() {
             </select>
           </div>
 
-          <div className="flex flex-col">
+          <div className="w-full sm:w-auto flex flex-col">
             <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
             <input
               type="date"
@@ -180,7 +181,7 @@ export default function MySubmissions() {
             />
           </div>
 
-          <div className="flex flex-col">
+          <div className="w-full sm:w-auto flex flex-col">
             <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
             <input
               type="date"
