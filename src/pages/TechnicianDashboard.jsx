@@ -236,12 +236,13 @@ export default function TechnicianDashboard() {
             Update your personal information 
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full max-w-md">
-          <select
-            className="w-full border border-border-light rounded-md p-2 text-sm"
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-          >
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
+          <div className="w-full sm:flex-1">
+            <select
+              className="w-full border border-border-light rounded-md p-2 text-sm"
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
             <option value="">All Projects</option>
             {projectOptions.map((name) => (
               <option key={name} value={name}>
@@ -249,22 +250,33 @@ export default function TechnicianDashboard() {
               </option>
             ))}
           </select>
+        </div>  
 
+          <div className="w-full sm:w-auto flex flex-col">
+          <label className="text-xs font-semibold text-gray-700 mb-1">
+            Start Date
+          </label>
           <input
             type="date"
-            className="w-full border border-border-light rounded-md p-2 text-sm"
+            className="border border-border-light rounded-md p-2 text-sm"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             aria-label="Start date"
           />
+          </div>
 
+          <div className="w-full sm:w-auto flex flex-col">
+          <label className="text-xs font-semibold text-gray-700 mb-1">
+            End Date
+          </label>
           <input
             type="date"
-            className="w-full border border-border-light rounded-md p-2 text-sm"
+            className="border border-border-light rounded-md p-2 text-sm"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             aria-label="End date"
           />
+          </div>
         </div>
       </div>
 
@@ -340,9 +352,9 @@ export default function TechnicianDashboard() {
         <p className="text-gray-500">No assigned reports</p>
       )}
 
-      <div className="bg-white shadow rounded-lg overflow-hidden mt-4">
+      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto">
 
-      <table className="w-full text-sm text-left">
+      <table className="min-w-[750px] w-full text-sm text-left">
 
         <thead className="bg-gray-50 text-gray-600">
           <tr>

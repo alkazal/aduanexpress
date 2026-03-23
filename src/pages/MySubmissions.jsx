@@ -247,9 +247,9 @@ export default function MySubmissions() {
         <p className="text-gray-500">You have no report submissions yet.</p>
       )}
 
-      <div className="bg-white shadow rounded-lg overflow-hidden mt-4">
+      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto">
 
-        <table className="w-full text-sm text-left">
+        <table className="min-w-[700px] w-full text-sm text-left">
 
           <thead className="bg-gray-50 text-gray-600">
             <tr>

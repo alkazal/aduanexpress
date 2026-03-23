@@ -487,7 +487,7 @@ export default function ReportDetails() {
             Send Response
           </button>
 
-          {/* Previous Public Replies */}
+          {/* Display Previous Public Replies */}
           <div className="mt-6 space-y-3">
             {comments
               .filter(c => !c.is_internal)
@@ -527,7 +527,7 @@ export default function ReportDetails() {
             Add Internal Note
           </button>
 
-          {/* Previous Internal Notes */}
+          {/* Display Previous Internal Notes */}
           <div className="mt-6 space-y-3">
             {comments
               .filter(c => c.is_internal)
