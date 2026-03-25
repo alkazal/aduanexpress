@@ -142,7 +142,7 @@ export default function ReportDetails() {
       .from("report_comments")
       .select(`
         *,
-        user:user_id (
+        user:user_profiles (
           full_name,
           role
         )
