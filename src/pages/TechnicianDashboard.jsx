@@ -18,6 +18,7 @@ export default function TechnicianDashboard() {
   const [selectedProject, setSelectedProject] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [levelUpdates, setLevelUpdates] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -227,6 +228,110 @@ export default function TechnicianDashboard() {
     return "bg-gray-100 text-gray-700 px-2 py-1 rounded-full";
   }
 
+  async function updateReport(reportId) {
+    const newStatus = statusUpdates[reportId];
+    const newLevel = levelUpdates[reportId];
+
+    const current = reports.find(r => r.id === reportId);
+    if (!current) return;
+
+    // If nothing changed
+    if (
+      (!newStatus || newStatus === current.status) &&
+      (!newLevel || Number(newLevel) === Number(current.maintenance_level))
+    ) {
+      alert("No changes made");
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session.user;
+
+    // --------------------------
+    // Build update object
+    // --------------------------
+    const updates = {
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+      synced: false
+    };
+
+    if (newStatus && newStatus !== current.status) {
+      updates.status = newStatus;
+    }
+
+    if (newLevel && Number(newLevel) !== Number(current.maintenance_level)) {
+      updates.maintenance_level = Number(newLevel);
+    }
+
+    // --------------------------
+    // History (ONLY for status)
+    // --------------------------
+    let historyEntry = null;
+
+    if (updates.status) {
+      historyEntry = {
+        old_status: current.status,
+        new_status: updates.status,
+        changed_by: user.id,
+        changed_by_name: user.email || user.id,
+        changed_at: new Date().toISOString()
+      };
+
+      updates._status_changes = [
+        ...(current._status_changes || []),
+        historyEntry
+      ];
+    }
+
+    // --------------------------
+    // 1) Update Dexie
+    // --------------------------
+    await db.reports.update(reportId, updates);
+
+    // --------------------------
+    // 2) Try Supabase
+    // --------------------------
+    if (navigator.onLine) {
+      const { error } = await supabase
+        .from("reports")
+        .update(updates)
+        .eq("id", reportId);
+
+      if (error) {
+        console.error(error);
+        alert("Saved offline — will sync later");
+        return;
+      }
+
+      // Insert history if needed
+      if (historyEntry) {
+        const { error: historyError } = await supabase
+          .from("report_status_history")
+          .insert({
+            report_id: reportId,
+            old_status: historyEntry.old_status,
+            new_status: historyEntry.new_status,
+            changed_by: historyEntry.changed_by,
+            changed_by_name: historyEntry.changed_by_name,
+            changed_at: historyEntry.changed_at
+          });
+
+        if (historyError) {
+          console.error("History insert failed:", historyError);
+        }
+      }
+
+      await db.reports.update(reportId, {
+        synced: true,
+        ...(historyEntry ? { _status_changes: [] } : {})
+      });
+    }
+
+    alert("✅ Updated successfully");
+    loadReports();
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -401,7 +506,24 @@ export default function TechnicianDashboard() {
                 {new Date(r.created_at).toLocaleDateString()}
               </td>
 
-              <td className="px-4 py-3 flex gap-2">
+              <td className="px-4 py-3 flex gap-2 items-center">
+  
+                {/* LEVEL */}
+                <select
+                  className="border border-border-light p-1 rounded text-xs"
+                  value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
+                  onChange={(e) =>
+                    setLevelUpdates({
+                      ...levelUpdates,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Level</option>
+                  <option value="1">L1</option>
+                  <option value="2">L2</option>
+                  <option value="3">L3</option>
+                </select>
 
                 <select
                   className="border border-border-light p-1 rounded text-sm"
@@ -420,8 +542,13 @@ export default function TechnicianDashboard() {
                 </select>
 
                 <button
-                  onClick={() => updateStatus(r.id)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                  onClick={() => updateReport(r.id)}
+                  disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
+                  className={`px-2 py-1 rounded text-xs text-white
+                    ${!statusUpdates[r.id] && !levelUpdates[r.id]
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                    }`}
                 >
                   Update
                 </button>
