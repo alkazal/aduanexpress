@@ -458,17 +458,18 @@ export default function TechnicianDashboard() {
       )}
 
       <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto">
+      <div className="w-full overflow-x-auto">
 
-      <table className="min-w-[750px] w-full text-sm text-left">
+      <table className="min-w-[900px] w-full text-sm text-left">
 
         <thead className="bg-gray-50 text-gray-600">
           <tr>
-            <th className="px-4 py-3">Ticket ID</th>
-            <th className="px-4 py-3">Subject</th>
-            <th className="px-4 py-3">Project</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Created</th>
-            <th className="px-4 py-3">Action</th>
+            <th className="px-4 py-3 whitespace-nowrap">Ticket ID</th>
+            <th className="px-4 py-3 whitespace-nowrap">Subject</th>
+            <th className="px-4 py-3 whitespace-nowrap">Project</th>
+            <th className="px-4 py-3 whitespace-nowrap">Status</th>
+            <th className="px-4 py-3 whitespace-nowrap">Created</th>
+            <th className="px-4 py-3 whitespace-nowrap">Action</th>
           </tr>
         </thead>
 
@@ -481,32 +482,32 @@ export default function TechnicianDashboard() {
               className="border-t hover:bg-gray-50"
             >
 
-              <td className="px-4 py-3 font-medium">
+              <td className="px-4 py-3 whitespace-nowrap font-medium">
                 #{r.ticket_no}
               </td>
 
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 whitespace-nowrap">
                 <div className="font-semibold">{r.title}</div>
                 <div className="text-gray-500 text-xs">
                   {r.description?.slice(0,40)}
                 </div>
               </td>
 
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 whitespace-nowrap">
                 {r.project_name || "-"}
               </td>
 
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 whitespace-nowrap">
               <span className={`text-xs ${statusColor(r.status)}`}>
                   {r.status}
                 </span>
               </td>
 
-              <td className="px-4 py-3 text-gray-500">
+              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                 {new Date(r.created_at).toLocaleDateString()}
               </td>
 
-              <td className="px-4 py-3 flex gap-2 items-center">
+              <td className="px-4 py-3 flex whitespace-nowrap gap-2 items-center">
   
                 {/* LEVEL */}
                 <select
@@ -569,6 +570,8 @@ export default function TechnicianDashboard() {
         </tbody>
 
       </table>
+
+    </div>
 
     </div>
 

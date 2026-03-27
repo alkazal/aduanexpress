@@ -90,11 +90,10 @@ export default function AssignReport() {
   async function handleAssign(reportId) {
 
     const level = selectedLevel[reportId];
+    const technicianId = selectedTech[reportId];
 
     if (!technicianId) return alert("Please select technician");
     if (!level) return alert("Please select maintenance level");
-
-    const technicianId = selectedTech[reportId];
 
     if (!technicianId) return alert("Please select technician");
 

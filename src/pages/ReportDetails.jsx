@@ -43,22 +43,36 @@ export default function ReportDetails() {
 
   useEffect(() => {
     async function getUserRole() {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Error fetching user:", error);
+          setRoleLoading(false);
+          return;
+        }
 
-      if (!user) return;
+        const user = data?.user;
+        if (!user) {
+          setRoleLoading(false);
+          return;
+        }
 
-      const { data } = await supabase
-        .from("user_profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
 
-      if (data) {
-        setUserRole(data.role);
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        } else {
+          setUserRole(profileData?.role || null);
+        }
+      } catch (err) {
+        console.error("Unexpected error getting user role:", err);
+      } finally {
+        setRoleLoading(false);
       }
-      setRoleLoading(false);
     }
 
     getUserRole();
@@ -71,92 +85,110 @@ export default function ReportDetails() {
     async function load() {
       setLoading(true);
 
-      // 1. Try Dexie first
-      const local = await db.reports.get(id);
-      if (local) {
-        setReport(local);
+      try {
+        // 1️⃣ Load local report
+        const local = await db.reports.get(id);
+        if (local) {
+          const localWithHistory = { ...local, history: local._status_changes || [] };
+          setReport(localWithHistory);
 
-        local.history = local._status_changes || [];
+          // Merge project name if missing
+          if (local.project_id && !local.project_name) {
+            const proj = await db.projects.get(local.project_id);
+            if (proj) {
+              setReport(prev => ({ ...prev, project_name: proj.name }));
+            }
+          }
 
-        if (local.project_id && !local.project_name) {
-          const proj = await db.projects.get(local.project_id);
-          if (proj) {
-            setReport((prev) => ({
+          // Local attachments
+          const localAttachments = await db.attachments
+            .where("report_id")
+            .equals(id)
+            .and(a => !a.to_delete)
+            .toArray();
+          setAttachments(localAttachments);
+        }
+
+        // If online, fetch latest report
+        if (navigator.onLine) {
+          const { data: online, error: reportError } = await supabase
+            .from("reports")
+            .select(`
+              *,
+              reporter:user_id ( full_name ),
+              technician:assigned_to ( full_name ),
+              project:project_id ( id, name ),
+              history:report_status_history (
+                id, old_status, new_status, changed_at, comment, changed_by, changed_by_name
+              )
+            `)
+            .eq("id", id)
+            .single();
+
+          if (reportError) {
+            console.error("Error fetching online report:", reportError);
+          } else if (online) {
+            setReport(prev => ({
               ...prev,
-              project_name: proj.name
+              ...online,
+              project_id: online.project?.id || prev.project_id || null,
+              project_name: online.project?.name || prev.project_name || null,
+              history: [...(prev?.history || []), ...(online.history || [])]
             }));
           }
-        }
-        
-        const att = await db.attachments
-          .where("report_id")
-          .equals(id)
-          .and((a) => !a.to_delete)
-          .toArray();
-        setAttachments(att);
-      }
 
-      // 2. If online → fetch fresh version from Supabase
-      if (navigator.onLine) {
-        const { data: online, error } = await supabase
-          .from("reports")
-          .select(
-            `
-            *,
-            reporter:user_id ( full_name ),
-            technician:assigned_to ( full_name ),
-            project:project_id ( id, name ),
-            history:report_status_history (
-              id,
-              old_status,
-              new_status,
-              changed_at,
-              comment,
-              changed_by,
-              changed_by_name
-            )
-          `
-          )
-          .eq("id", id)
-          .single();
-
-        if (!error && online) {
-          setReport({
-            ...online,
-            project_id: online.project?.id || online.project_id || null,
-            project_name: online.project?.name || online.project_name || null
-          });
-
-          const { data: onlineAtt } = await supabase
+          // Online attachments
+          const { data: onlineAtt, error: attError } = await supabase
             .from("attachments")
             .select("*")
             .eq("report_id", id);
 
-          setAttachments(onlineAtt || []);
+          if (attError) {
+            console.error("Error fetching attachments:", attError);
+          } else {
+            // Merge local + online attachments, avoid duplicates by id
+            const merged = [...(attachments || [])];
+            onlineAtt?.forEach(oa => {
+              if (!merged.some(a => a.id === oa.id)) merged.push(oa);
+            });
+            setAttachments(merged);
+          }
         }
+
+        // Load comments
+        const { data: commentData, error: commentError } = await supabase
+          .from("report_comments")
+          .select(`
+            *,
+            user:user_profiles (
+              full_name, role
+            )
+          `)
+          .eq("report_id", id)
+          .order("created_at", { ascending: false });
+
+        if (commentError) {
+          console.error("Error fetching comments:", commentError);
+        } else if (commentData) {
+          setComments(commentData);
+        }
+      } catch (err) {
+        console.error("Unexpected error loading report:", err);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-
-      const { data: commentData } = await supabase
-      .from("report_comments")
-      .select(`
-        *,
-        user:user_profiles (
-          full_name,
-          role
-        )
-      `)
-      .eq("report_id", id)
-      .order("created_at", { ascending: false });
-
-    if (commentData) {
-      setComments(commentData);
-    }
     }
 
     load();
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      attachments.forEach(att => {
+        if (att.file || att.file_data) URL.revokeObjectURL(att.file || att.file_data);
+      });
+    };
+  }, [attachments]);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -301,9 +333,26 @@ export default function ReportDetails() {
           {report.title}
         </p>
 
-        <span className="inline-block mt-2 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+        <div className="flex gap-2 mt-2 flex-wrap">
+
+        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
           {report.status}
         </span>
+
+        {report.maintenance_level && (
+          <span
+            className={`px-3 py-1 text-xs rounded-full font-semibold flex items-center gap-1
+              ${report.maintenance_level === 1 && "bg-green-100 text-green-700"}
+              ${report.maintenance_level === 2 && "bg-yellow-100 text-yellow-700"}
+              ${report.maintenance_level === 3 && "bg-red-100 text-red-700"}
+            `}
+          >
+            Maintenance L{report.maintenance_level}
+          </span>
+        )}
+
+      </div>
+
       </div>
 
             <div className="bg-white border rounded-xl p-6 shadow-sm mt-4">
@@ -313,12 +362,21 @@ export default function ReportDetails() {
           {report.description}
         </p>
 
-        <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 text-sm">
 
           <div>
             <p className="text-gray-500">Project</p>
             <p className="font-medium">
               {report.project_name || report.project_id}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Maintenance Level</p>
+            <p className="font-medium">
+              {report.maintenance_level
+                ? `Level ${report.maintenance_level}`
+                : "Not set"}
             </p>
           </div>
 
