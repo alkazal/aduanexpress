@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import httpsLocalhost from 'https-localhost'
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ command }) => {
   const useHttps = process.env.HTTPS === 'true'
-  const httpsConfig = useHttps ? await httpsLocalhost() : false
+  let httpsConfig = false
+
+  // Load https-localhost only for local serve/preview.
+  // This prevents Vercel build from importing dependencies that rely on deprecated Node internals.
+  if (useHttps && command !== 'build') {
+    const { default: httpsLocalhost } = await import('https-localhost')
+    httpsConfig = await httpsLocalhost()
+  }
 
   return {
     server: {
