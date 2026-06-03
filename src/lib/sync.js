@@ -210,13 +210,36 @@ export async function syncReports() {
         payload.user_id = report.user_id;
       }
 
-      console.log("⬆️ UPSERT:", payload);
-
       try {
-        // UPSERT report       
-        const { error: upErr } = await supabase
-          .from("reports")
-          .upsert(payload, { onConflict: "id" });
+        // For reports already synced to the server (_synced_once), use plain UPDATE.
+        // This avoids triggering Supabase's INSERT RLS policy which would block
+        // technicians who didn't create the report (user_id ≠ auth.uid()).
+        // New local reports (no _synced_once) still use UPSERT to insert them.
+        let upErr = null;
+
+        if (report._synced_once) {
+          console.log("⬆️ UPDATE (existing):", reportId);
+          const { error } = await supabase
+            .from("reports")
+            .update({
+              status: report.status,
+              title: report.title,
+              description: report.description,
+              project_id: report.project_id || null,
+              assigned_to: report.assigned_to,
+              assigned_at: report.assigned_at,
+              updated_at: report.updated_at || new Date().toISOString(),
+              updated_by: report.updated_by || null,
+            })
+            .eq("id", reportId);
+          upErr = error;
+        } else {
+          console.log("⬆️ UPSERT (new):", payload);
+          const { error } = await supabase
+            .from("reports")
+            .upsert(payload, { onConflict: "id" });
+          upErr = error;
+        }
 
         if (upErr) {
           if (upErr.code === '3F000') {
@@ -226,7 +249,7 @@ export async function syncReports() {
             );
             alert("Database Error: 'pg_net' extension missing. Check console for details.");
           } else {
-            console.error("❌ Upsert error", upErr);
+            console.error("❌ Sync error", upErr.code, upErr.message);
           }
           continue;
         }

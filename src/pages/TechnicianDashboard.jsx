@@ -66,10 +66,21 @@ export default function TechnicianDashboard() {
         .order("assigned_at", { ascending: false });
 
       if (!error) {
-        const list = (data || []).map((r) => ({
-          ...r,
-          project_name: r.project?.name || r.project_name || null
-        }));
+        // Overlay any locally-saved unsynced changes on top of server data.
+        // This ensures a status update the technician made (but hasn't synced yet)
+        // stays visible instead of being overwritten by the stale server value.
+        const unsyncedLocal = await db.reports
+          .filter(r => r.assigned_to === user.id && r.synced === false)
+          .toArray();
+        const unsyncedMap = new Map(unsyncedLocal.map(r => [r.id, r]));
+
+        const list = (data || []).map((r) => {
+          const local = unsyncedMap.get(r.id);
+          return {
+            ...(local ? { ...r, ...local } : r),
+            project_name: r.project?.name || (local || r).project_name || null
+          };
+        });
         setReports(list);
       }
     } 
