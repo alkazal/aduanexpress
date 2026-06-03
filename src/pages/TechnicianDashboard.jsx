@@ -327,9 +327,20 @@ export default function TechnicianDashboard() {
     // 2) Try Supabase
     // --------------------------
     if (navigator.onLine) {
+      const serverUpdates = {
+        updated_at: updates.updated_at,
+        updated_by: updates.updated_by,
+        ...(Object.prototype.hasOwnProperty.call(updates, "status")
+          ? { status: updates.status }
+          : {}),
+        ...(Object.prototype.hasOwnProperty.call(updates, "maintenance_level")
+          ? { maintenance_level: updates.maintenance_level }
+          : {})
+      };
+
       const { error } = await supabase
         .from("reports")
-        .update(updates)
+        .update(serverUpdates)
         .eq("id", reportId);
 
       if (error) {
