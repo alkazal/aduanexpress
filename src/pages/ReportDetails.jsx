@@ -550,17 +550,19 @@ export default function ReportDetails() {
             {comments
               .filter(c => !c.is_internal)
               .map(c => (
-                <div key={c.id} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium">
+                <div key={c.id} className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                  <div className="flex flex-col gap-1 mb-2">
+                    <p className="text-sm font-semibold text-gray-900">
                       {c.user?.full_name || "Unknown"}
-                    </span>
-                    <span className="text-xs text-gray-500">
+                    </p>
+                    <p className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
-                    </span>
+                    </p>
                   </div>
 
-                  <p className="text-sm text-gray-700">{c.message}</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                    {c.message}
+                  </p>
                 </div>
               ))}
           </div>
@@ -591,16 +593,18 @@ export default function ReportDetails() {
               .filter(c => c.is_internal)
               .map(c => (
                 <div key={c.id} className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium">
+                  <div className="flex flex-col gap-1 mb-2">
+                    <p className="text-sm font-semibold text-gray-900">
                       {c.user?.full_name || "Unknown"}
-                    </span>
-                    <span className="text-xs text-gray-500">
+                    </p>
+                    <p className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
-                    </span>
+                    </p>
                   </div>
 
-                  <p className="text-sm text-gray-700">{c.message}</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                    {c.message}
+                  </p>
                 </div>
               ))}
           </div>

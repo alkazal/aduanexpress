@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:https": "set HTTPS=true&&vite",
     "serve": "SET PORT=4433 && serve dist",
     "build": "vite build",
     "lint": "eslint .",
