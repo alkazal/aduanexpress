@@ -145,127 +145,130 @@ export default function NewReport() {
     navigate("/submissions");
   };
 
-  return (
-    <div className="p-4 max-w-lg mx-auto">
-      <h2 className="text-xl font-semibold mb-4">New Report</h2>
-
-      {error && (
-        <div className="bg-red-100 text-red-700 p-2 mb-3 rounded">{error}</div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {/* Report Type */}
-        <div>
-          <label className="block font-medium">Report Type</label>
-          <select
-            className="w-full border rounded-md p-2"
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
+return (
+    <div className="p-6 w-full min-h-screen bg-gray-100">
+      <div className="max-w-4xl w-full mx-auto">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-blue-600 underline mb-2"
           >
-            <option value="">Select a type</option>
-            <option value="Attendance">Attendance</option>
-            <option value="Incident">Incident</option>
-            <option value="Maintenance">Maintenance</option>
-          </select>
+            Back
+          </button>
+          <h1 className="text-2xl font-bold">New Report</h1>
+          <p className="text-gray-500 text-sm">Fill out the details below</p>
         </div>
 
-        {/* Project */}
-        <div>
-          <label className="block font-medium">Project</label>
-          <select
-            className="w-full border rounded-md p-2"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            required
-          >
-            <option value="">Select a project</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {projects.length === 0 && (
-            <p className="text-sm text-gray-500 mt-1">
-              No projects available.
-            </p>
-          )}
-        </div>
+        {/* Error */}
+        {error && (
+          <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>
+        )}
 
-        {/* Title */}
-        <div>
-          <label className="block font-medium">Title</label>
-          <input
-            className="border p-2 rounded w-full"            
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block font-medium">Description</label>
-          <textarea
-            className="border p-2 rounded w-full"
-            rows="4"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-          />
-        </div>
-
-        {/* Attachments */}
-        <div>
-          <label className="block font-medium">Attachments</label>
-          <input
-            type="file"
-            multiple
-            onChange={handleFileChange}
-            className="block mt-2"
-          />
-          {compressing && (
-            <div className="space-y-2 mt-4">
-              {Object.entries(progressMap).map(([name, progress]) => (
-                <div key={name}>
-                  <p className="text-sm font-medium mb-1">{name}</p>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-200"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-6 space-y-6">
+          {/* Report Type & Project */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1">Report Type</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+              >
+                <option value="">Select a type</option>
+                <option value="Attendance">Attendance</option>
+                <option value="Incident">Incident</option>
+                <option value="Maintenance">Maintenance</option>
+              </select>
             </div>
-          )}
 
-          {/* File Previews */}
-          {attachments.length > 0 && (
-            <ul className="mt-3 bg-gray-100 p-2 rounded">
-              {attachments.map((file, idx) => (
-                <li key={idx} className="text-sm text-gray-700">
-                  📎 {file.name} ({Math.round(file.size / 1024)} KB)
-                </li>
-              ))}
-            </ul>
-          )}
+            <div>
+              <label className="block font-medium mb-1">Project</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                required
+              >
+                <option value="">Select a project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {projects.length === 0 && (
+                <p className="text-sm text-gray-500 mt-1">No projects available.</p>
+              )}
+            </div>
+          </div>
 
-          {compressing && (
-            <p className="text-blue-500">
-              Compressing {attachments.length} images...
-            </p>
-          )}
-        </div>
+          {/* Title & Description */}
+          <div>
+            <label className="block font-medium mb-1">Title</label>
+            <input
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded mt-3 w-full"
-        >
-          Submit Report
-        </button>
-      </form>
+          <div>
+            <label className="block font-medium mb-1">Description</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="4"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="block font-medium mb-1">Attachments</label>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="block mt-2"
+            />
+
+            {compressing && (
+              <div className="space-y-2 mt-4">
+                {Object.entries(progressMap).map(([name, progress]) => (
+                  <div key={name}>
+                    <p className="text-sm font-medium mb-1">{name}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-200"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {attachments.length > 0 && (
+              <ul className="mt-3 bg-gray-100 p-2 rounded">
+                {attachments.map((file, idx) => (
+                  <li key={idx} className="text-sm text-gray-700">
+                    📎 {file.name} ({Math.round(file.size / 1024)} KB)
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Submit Report
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -87,27 +87,43 @@ export default function UserProfile() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    
+    <div className="p-6">
+      {/*Back button*/}
       <button
         onClick={() => navigate(-1)}
-        className="text-blue-600 underline mb-4"
+        className="text-blue-600 underline mb-6"
       >
         Back
       </button>
 
-      <h1 className="text-2xl font-bold mb-4">User Profile</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">User Profile</h1>
+          <p className="text-gray-500 text-sm">
+            Manage user information and role
+          </p>
+        </div>
+      </div>
 
+      {/*Status message*/}
       {status && (
-        <p className={`mb-3 text-sm ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
+        <p 
+        className={`mb-4 text-sm ${
+          status.includes("successfully") ? "text-green-600" : "text-red-600"
+          }`}
+        >
           {status}
         </p>
       )}
 
-      <form onSubmit={handleSave} className="bg-white shadow rounded-lg p-4 space-y-3">
+      <form 
+      onSubmit={handleSave} 
+      className="bg-white shadow-lg rounded-xl p-6 space-y-6 w-full">
         <div>
           <label className="block text-sm font-medium mb-1">Full Name</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-border-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={profile.full_name || ""}
             onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
           />
@@ -116,7 +132,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
-            className="w-full border rounded-md p-2 bg-gray-100"
+            className="w-full border border-border-300 rounded-lg p-3 bg-gray-100 text-gray-600"
             value={profile.email || "Unavailable"}
             readOnly
           />
@@ -125,7 +141,7 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Role</label>
           <select
-            className="w-full border rounded-md p-2"
+            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={profile.role || "user"}
             onChange={(e) => setProfile({ ...profile, role: e.target.value })}
           >
@@ -138,35 +154,45 @@ export default function UserProfile() {
         <div>
           <label className="block text-sm font-medium mb-1">Contact No</label>
           <input
-            className="w-full border rounded-md p-2"
+            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={profile.contact_no || ""}
             onChange={(e) => setProfile({ ...profile, contact_no: e.target.value })}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Agency Name</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={profile.agency_name || ""}
-            onChange={(e) => setProfile({ ...profile, agency_name: e.target.value })}
-          />
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Agency Name</label>
+            <input
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={profile.agency_name || ""}
+              onChange={(e) =>
+                setProfile({ ...profile, agency_name: e.target.value })
+              }
+            />
+          </div>
+        </div>  
 
         <div>
-          <label className="block text-sm font-medium mb-1">Agency Role</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={profile.agency_role || ""}
-            onChange={(e) => setProfile({ ...profile, agency_role: e.target.value })}
-          />
-        </div>
+            <label className="block text-sm font-medium mb-1">Agency Role</label>
+            <input
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={profile.agency_role || ""}
+              onChange={(e) =>
+                setProfile({ ...profile, agency_role: e.target.value })
+              }
+            />
+          </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Created At</label>
+          <label className="block text-sm font-medium mb-1">Joined At</label>
           <input
-            className="w-full border rounded-md p-2 bg-gray-100"
-            value={profile.created_at ? new Date(profile.created_at).toLocaleString() : "-"}
+            className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-600"
+            value={
+              profile.created_at
+                ? new Date(profile.created_at).toLocaleString()
+                : "-"
+            }
             readOnly
           />
         </div>
@@ -174,7 +200,7 @@ export default function UserProfile() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
         >
           {saving ? "Saving..." : "Save Changes"}
         </button>

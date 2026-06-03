@@ -6,6 +6,16 @@ import Toast from "../components/Toast";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 //import { startNotificationListener } from "../lib/notificationListener";
 
+import { 
+  Inbox, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle, 
+  TrendingUp,
+  TrendingDown,
+  ArrowRight,
+  Star
+} from 'lucide-react';
 
 import {  
   BarChart,
@@ -15,6 +25,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  PieChart,
+  Pie,
+  Cell
 } from "recharts";
 
 export default function Home() {
@@ -178,9 +191,33 @@ export default function Home() {
     offline: filteredReports.filter(r => r.report_type === type && !r.synced).length,
   }));
 
+  const statusChartData = [
+  { name: "NEW", value: statusCounts.NEW },
+  { name: "OPEN", value: statusCounts.OPEN },
+  { name: "PENDING", value: statusCounts.PENDING },
+  { name: "RESOLVED", value: statusCounts.RESOLVED },
+  { name: "CLOSED", value: statusCounts.CLOSED }
+];
+
+const projectChartData = Object.values(
+  filteredReports.reduce((acc, r) => {
+    const project = r.project_name || "No Project";
+
+    if (!acc[project]) {
+      acc[project] = {
+        project,
+        count: 0
+      };
+    }
+
+    acc[project].count += 1;
+    return acc;
+  }, {})
+);
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-2">
+      <h1 className="text-2xl font-bold mb-6">
         Welcome, {user?.email ?? "User"}!
       </h1>
 
@@ -196,81 +233,100 @@ export default function Home() {
         <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
       )}
 
-       {/* Summary Cards */}
-      <div class="max-w-[100rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
-        <div class="grid items-center lg:grid-cols-12 gap-6 lg:gap-12">
-          <div class="lg:col-span-2">
-            <div class="lg:pe-6 xl:pe-12">
-              <p class="text-6xl font-bold leading-10 text-primary">
-                {totalReports}               
-              </p>
-              <p class="mt-2 sm:mt-3 text-muted-foreground-1">Total Reports</p>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+
+        {/* Total Reports */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+          
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Total Reports</p>
+            <p className="text-4xl font-bold text-gray-700">{totalReports}</p>
+            <div className="flex items-center gap-1 text-xs text-green-600">
+              <TrendingUp className="h-3 w-3" />
+              <span>+{statusCounts.NEW} New</span>
             </div>
           </div>
 
-          <div class="lg:col-span-8 relative lg:before:absolute lg:before:top-0 lg:before:-start-12 lg:before:w-px lg:before:h-full lg:before:bg-surface-1">
-            <div class="flex items-center justify-between gap-4">
-              <h4 class="text-lg sm:text-xl font-semibold text-foreground">Report Status</h4>
-              <div class="w-full max-w-xs">
-                <select
-                  class="w-full border rounded-md p-2 text-sm"
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                >
-                  <option value="">All Projects</option>
-                  {projectOptions.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div class="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-7 sm:gap-8">
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.NEW}</p>
-                <p class="mt-1 text-muted-foreground-1">NEW</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.OPEN}</p>
-                <p class="mt-1 text-muted-foreground-1">OPEN</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.PENDING}</p>
-                <p class="mt-1 text-muted-foreground-1">PENDING</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.RESOLVED}</p>
-                <p class="mt-1 text-muted-foreground-1">RESOLVED</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{statusCounts.CLOSED}</p>
-                <p class="mt-1 text-muted-foreground-1">CLOSED</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{pendingSync}</p>
-                <p class="mt-1 text-muted-foreground-1">PENDING SYNC</p>
-              </div>
-
-              <div>
-                <p class="text-3xl font-semibold text-primary">{recentReports.length}</p>
-                <p class="mt-1 text-muted-foreground-1">RECENT REPORTS</p>
-              </div>
-
-            </div>
+          {/* Icon */}
+          <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+            <Inbox className="h-6 w-6 text-blue-600" />
           </div>
         </div>
+
+        {/* Open + Pending Sync Card */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+          
+          <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Open</p>
+              <p className="text-3xl font-bold text-gray-700">{statusCounts.OPEN}</p>
+              <p className="flex items-center gap-1 text-xs text-gray-500">
+                <TrendingDown className="h-3 w-3" />
+                <span>{pendingSync > 0 ? `${pendingSync} Needs Sync` : "All Synced"}</span>
+              </p>
+          </div>
+
+          {/* Icon */}
+          <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+            <Clock className="h-6 w-6 text-purple-600" />
+          </div>
+        </div>
+
+        {/* Pending */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+          
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Pending</p>
+            <p className="text-3xl font-bold text-red-600">{statusCounts.PENDING}</p>
+            <p className="text-xs text-red-500">Needs Attention</p>
+          </div>
+
+          {/* Icon */}
+          <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+            <AlertCircle className="h-6 w-6 text-red-600" />
+          </div>
+        </div>
+
+        {/* Resolved */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Resolved</p>
+            <p className="text-3xl font-bold text-green-600">{statusCounts.RESOLVED}</p>
+            <p className="text-xs text-gray-500">Completed</p>
+          </div>
+
+          {/* Icon */}
+          <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+        </div>
+
+        {/* Closed */}
+        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+          
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-gray-500">Closed</p>
+            <p className="text-3xl font-bold text-gray-700">{statusCounts.CLOSED}</p>
+            <p className="text-xs text-gray-500">No follow-up</p>
+          </div>
+
+          {/* Icon */}
+          <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+            <CheckCircle className="h-6 w-6 text-gray-700" />
+          </div>
+        </div>
+
       </div>
-     
 
       {/* Stacked Chart */}
-      <div className="bg-white shadow rounded-lg p-4 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Reports by Type (Online vs Offline)</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      {/* Reports by Type */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h2 className="text-xl font-semibold mb-4">
+          Reports by Type (Online vs Offline)
+        </h2>
+
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={chartData}>
             <XAxis dataKey="type" />
@@ -279,6 +335,51 @@ export default function Home() {
             <Legend />
             <Bar dataKey="online" stackId="a" fill="#3b82f6" />
             <Bar dataKey="offline" stackId="a" fill="#f87171" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Status Chart */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h2 className="text-xl font-semibold mb-4">Reports by Status</h2>
+
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie
+              data={statusChartData}
+              dataKey="value"
+              nameKey="name"
+              outerRadius={80}
+              label
+            >
+              <Cell fill="#3b82f6" />
+              <Cell fill="#f59e0b" />
+              <Cell fill="#6366f1" />
+              <Cell fill="#22c55e" />
+              <Cell fill="#6b7280" />
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+    </div>
+
+      {/* Reports by Project */}
+      <div className="bg-white shadow rounded-lg p-4 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Reports by Project</h2>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart
+            data={projectChartData}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+          >
+            <XAxis type="number" allowDecimals={false} />
+            <YAxis type="category" dataKey="project" />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="count" fill="#6366f1" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -296,7 +397,7 @@ export default function Home() {
               <div 
                   key={r.id}
                   onClick={() => navigate(`/report/${r.id}`)}
-                  className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                  className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-bg-primary"
                 >
                 {r.attachment_url && (
                   <img

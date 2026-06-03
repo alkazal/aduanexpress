@@ -44,17 +44,23 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
 
-        <h1 className="text-2xl font-bold text-center mb-6">Register</h1>
+        {/* Logo and Title */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-lg font-semibold">AE</span>
+          </div>
+          <h1 className="text-2xl font-bold">AduanExpress</h1>
+        </div>
 
         {/* Email */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
             type="email"
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-border-light rounded-md"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -66,7 +72,7 @@ export default function Register() {
           <label className="block text-sm font-medium mb-1">Password</label>
           <input
             type="password"
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-border-light rounded-md"
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +84,7 @@ export default function Register() {
           <label className="block text-sm font-medium mb-1">Confirm Password</label>
           <input
             type="password"
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 border border-border-light rounded-md"
             placeholder="••••••••"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

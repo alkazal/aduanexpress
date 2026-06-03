@@ -15,6 +15,8 @@ export default function EditProfile() {
   const [role, setRole] = useState("");
   const [isManager, setIsManager] = useState(false);
 
+  const roles = ["user", "manager", "technician"];
+
   useEffect(() => {
     let active = true;
 
@@ -147,85 +149,97 @@ export default function EditProfile() {
   if (loading) return <p className="p-6">Loading profile...</p>;
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Edit Profile</h1>
+    <div className="p-6 w-full min-h-screen bg-gray-100">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">Edit Profile</h1>
+          <p className="text-gray-500 text-sm">
+            Update your personal information 
+          </p>
+        </div>
+      </div>
 
       {status && (
-        <p className={`mb-4 text-sm ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
-          {status}
-        </p>
+          <p className={`mb-4 text-sm ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
+            {status}
+          </p>
       )}
 
-      <form onSubmit={handleSave} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Full Name</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Full name"
-          />
-        </div>
+        <form onSubmit={handleSave} className="bg-white shadow-lg rounded-xl p-6 space-y-6">
+  
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Name</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full name"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Contact No</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={contactNo}
-            onChange={(e) => setContactNo(e.target.value)}
-            placeholder="Contact number"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Contact No</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={contactNo}
+                onChange={(e) => setContactNo(e.target.value)}
+                placeholder="Contact number"
+              />
+            </div>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Agency Name</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={agencyName}
-            onChange={(e) => setAgencyName(e.target.value)}
-            placeholder="Agency name"
-          />
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Agency Name</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={agencyName}
+                onChange={(e) => setAgencyName(e.target.value)}
+                placeholder="Agency name"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Agency Role</label>
-          <input
-            className="w-full border rounded-md p-2"
-            value={agencyRole}
-            onChange={(e) => setAgencyRole(e.target.value)}
-            placeholder="Agency role"
-          />
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Agency Role</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={agencyRole}
+                onChange={(e) => setAgencyRole(e.target.value)}
+                placeholder="Agency role"
+              />
+            </div>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">User Role</label>
-          {isManager ? (
-            <select
-              className="w-full border rounded-md p-2"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="user">User</option>
-              <option value="manager">Manager</option>
-              <option value="technician">Technician</option>
-            </select>
-          ) : (
-            <input
-              className="w-full border rounded-md p-2 bg-gray-100"
-              value={role || "user"}
-              readOnly
-            />
-          )}
-        </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">User Role</label>
+            {isManager ? (
+              <select
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                {roles.map((r) => (
+                  <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-600"
+                value={role || "user"}
+                readOnly
+              />
+            )}
+          </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-      </form>
-    </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </form>
+      </div>
   );
 }

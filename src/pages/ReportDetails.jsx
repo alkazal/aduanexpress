@@ -32,6 +32,52 @@ export default function ReportDetails() {
 
   const [loading, setLoading] = useState(true);
 
+  const [publicReply, setPublicReply] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [comments, setComments] = useState([]);
+  const [activeTab, setActiveTab] = useState("public");
+
+  const [userRole, setUserRole] = useState(null);
+  const isStaff = userRole === "manager" || userRole === "technician";
+  const [roleLoading, setRoleLoading] = useState(true);
+
+  useEffect(() => {
+    async function getUserRole() {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Error fetching user:", error);
+          setRoleLoading(false);
+          return;
+        }
+
+        const user = data?.user;
+        if (!user) {
+          setRoleLoading(false);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        } else {
+          setUserRole(profileData?.role || null);
+        }
+      } catch (err) {
+        console.error("Unexpected error getting user role:", err);
+      } finally {
+        setRoleLoading(false);
+      }
+    }
+
+    getUserRole();
+  }, []);
+  
   // ----------------------------------------------------
   // LOAD REPORT (Offline first, then online fallback)
   // ----------------------------------------------------
@@ -39,76 +85,110 @@ export default function ReportDetails() {
     async function load() {
       setLoading(true);
 
-      // 1. Try Dexie first
-      const local = await db.reports.get(id);
-      if (local) {
-        setReport(local);
+      try {
+        // 1️⃣ Load local report
+        const local = await db.reports.get(id);
+        if (local) {
+          const localWithHistory = { ...local, history: local._status_changes || [] };
+          setReport(localWithHistory);
 
-        local.history = local._status_changes || [];
+          // Merge project name if missing
+          if (local.project_id && !local.project_name) {
+            const proj = await db.projects.get(local.project_id);
+            if (proj) {
+              setReport(prev => ({ ...prev, project_name: proj.name }));
+            }
+          }
 
-        if (local.project_id && !local.project_name) {
-          const proj = await db.projects.get(local.project_id);
-          if (proj) {
-            setReport((prev) => ({
+          // Local attachments
+          const localAttachments = await db.attachments
+            .where("report_id")
+            .equals(id)
+            .and(a => !a.to_delete)
+            .toArray();
+          setAttachments(localAttachments);
+        }
+
+        // If online, fetch latest report
+        if (navigator.onLine) {
+          const { data: online, error: reportError } = await supabase
+            .from("reports")
+            .select(`
+              *,
+              reporter:user_id ( full_name ),
+              technician:assigned_to ( full_name ),
+              project:project_id ( id, name ),
+              history:report_status_history (
+                id, old_status, new_status, changed_at, comment, changed_by, changed_by_name
+              )
+            `)
+            .eq("id", id)
+            .single();
+
+          if (reportError) {
+            console.error("Error fetching online report:", reportError);
+          } else if (online) {
+            setReport(prev => ({
               ...prev,
-              project_name: proj.name
+              ...online,
+              project_id: online.project?.id || prev.project_id || null,
+              project_name: online.project?.name || prev.project_name || null,
+              history: [...(prev?.history || []), ...(online.history || [])]
             }));
           }
-        }
-        
-        const att = await db.attachments
-          .where("report_id")
-          .equals(id)
-          .and((a) => !a.to_delete)
-          .toArray();
-        setAttachments(att);
-      }
 
-      // 2. If online → fetch fresh version from Supabase
-      if (navigator.onLine) {
-        const { data: online, error } = await supabase
-          .from("reports")
-          .select(
-            `
-            *,
-            reporter:user_id ( full_name ),
-            technician:assigned_to ( full_name ),
-            project:project_id ( id, name ),
-            history:report_status_history (
-              id,
-              old_status,
-              new_status,
-              changed_at,
-              comment,
-              changed_by,
-              changed_by_name
-            )
-          `
-          )
-          .eq("id", id)
-          .single();
-
-        if (!error && online) {
-          setReport({
-            ...online,
-            project_id: online.project?.id || online.project_id || null,
-            project_name: online.project?.name || online.project_name || null
-          });
-
-          const { data: onlineAtt } = await supabase
+          // Online attachments
+          const { data: onlineAtt, error: attError } = await supabase
             .from("attachments")
             .select("*")
             .eq("report_id", id);
 
-          setAttachments(onlineAtt || []);
+          if (attError) {
+            console.error("Error fetching attachments:", attError);
+          } else {
+            // Merge local + online attachments, avoid duplicates by id
+            const merged = [...(attachments || [])];
+            onlineAtt?.forEach(oa => {
+              if (!merged.some(a => a.id === oa.id)) merged.push(oa);
+            });
+            setAttachments(merged);
+          }
         }
-      }
 
-      setLoading(false);
+        // Load comments
+        const { data: commentData, error: commentError } = await supabase
+          .from("report_comments")
+          .select(`
+            *,
+            user:user_profiles (
+              full_name, role
+            )
+          `)
+          .eq("report_id", id)
+          .order("created_at", { ascending: false });
+
+        if (commentError) {
+          console.error("Error fetching comments:", commentError);
+        } else if (commentData) {
+          setComments(commentData);
+        }
+      } catch (err) {
+        console.error("Unexpected error loading report:", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     load();
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      attachments.forEach(att => {
+        if (att.file || att.file_data) URL.revokeObjectURL(att.file || att.file_data);
+      });
+    };
+  }, [attachments]);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -127,7 +207,7 @@ export default function ReportDetails() {
   // ----------------------------------------------------
   // BUILD STATUS TIMELINE (NEW CLEAN VERSION)
   // ----------------------------------------------------
-  const timeline = [];
+
 
   // 1) Submitted event
   // timeline.push({
@@ -148,24 +228,27 @@ export default function ReportDetails() {
   // }
 
   // 3) Status change history from DB (deduped)
-  const rawHistory = report.history || report._status_changes || [];
-  const seenHistoryKeys = new Set();
+  const rawHistory = [
+    ...(report.history || []),
+    ...(report._status_changes || [])
+  ];
+
+  const unique = new Map();
 
   rawHistory.forEach((h) => {
-    const key = h.id
-      ? `id:${h.id}`
-      : `k:${h.old_status}|${h.new_status}|${h.changed_at}|${h.changed_by}|${h.changed_by_name}|${h.comment}`;
+    const key = `${h.old_status}-${h.new_status}-${h.changed_at}`;
 
-    if (seenHistoryKeys.has(key)) return;
-    seenHistoryKeys.add(key);
-
-    timeline.push({
-      label: `${h.old_status} → ${h.new_status}`,
-      at: h.changed_at,
-      by: h.changed_by_name || h.changed_by,
-      comment: h.comment
-    });
+    if (!unique.has(key)) {
+      unique.set(key, {
+        label: `${h.old_status} → ${h.new_status}`,
+        at: h.changed_at,
+        by: h.changed_by_name || h.changed_by,
+        comment: h.comment
+      });
+    }
   });
+
+  const timeline = Array.from(unique.values());
 
   // 4) Closed (manager only)
   // if (report.closed_at) {
@@ -180,8 +263,60 @@ export default function ReportDetails() {
   // FINAL SORT
   timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
+  async function sendPublicReply() {
+    if (!publicReply.trim()) return;
+
+    // Get logged-in user FIRST
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    // Then insert
+    const { data, error } = await supabase
+      .from("report_comments")
+      .insert({
+        report_id: id,
+        message: publicReply,   
+        user_id: user.id,
+        is_internal: false      
+      })
+      .select()
+      .single();
+
+    if (!error) {
+      setComments(prev => [data, ...prev]);
+      setPublicReply("");
+    }
+  }
+
+  async function sendInternalNote() {
+    if (!internalNote.trim()) return;
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from("report_comments")
+      .insert({
+        report_id: id,
+        message: internalNote,  
+        user_id: user.id,
+        is_internal: true       
+      })
+      .select()
+      .single();
+
+    if (!error) {
+      setComments(prev => [data, ...prev]);
+      setInternalNote("");
+    }
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+
       <button
         onClick={() => navigate(-1)}
         className="text-blue-600 underline mb-4"
@@ -189,45 +324,85 @@ export default function ReportDetails() {
         ← Back
       </button>
 
-      <h1 className="text-2xl font-bold mb-2">{report.title}</h1>
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <h1 className="text-2xl font-bold mb-2">
+          #{report.ticket_no}
+        </h1>
 
-      <p className="text-gray-700">{report.description}</p>
+        <p className="text-lg text-gray-700">
+          {report.title}
+        </p>
 
-      <div className="mt-3 text-sm text-gray-600">
-        <p>
-          <b>Ticket No:</b> {report.ticket_no}
-        </p>
-        <p>
-          <b>Status:</b>{" "}
-          <span className="text-blue-600">{report.status}</span>
-        </p>
-        {(report.project_name || report.project_id) && (
-          <p>
-            <b>Project:</b>{" "}
-            {report.project_name || report.project_id}
-          </p>
+        <div className="flex gap-2 mt-2 flex-wrap">
+
+        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+          {report.status}
+        </span>
+
+        {report.maintenance_level && (
+          <span
+            className={`px-3 py-1 text-xs rounded-full font-semibold flex items-center gap-1
+              ${report.maintenance_level === 1 && "bg-green-100 text-green-700"}
+              ${report.maintenance_level === 2 && "bg-yellow-100 text-yellow-700"}
+              ${report.maintenance_level === 3 && "bg-red-100 text-red-700"}
+            `}
+          >
+            Maintenance L{report.maintenance_level}
+          </span>
         )}
-        <p>
-          <b>Submitted by:</b>{" "}
-          {report.reporter?.full_name || report.reporter_name || report.user_id}
-        </p>
-        {report.technician && (
-          <p>
-            <b>Assigned to:</b> {report.technician?.full_name || report.technician_name}
-          </p>
-        )}
+
       </div>
+
+      </div>
+
+            <div className="bg-white border rounded-xl p-6 shadow-sm mt-4">
+        <h2 className="font-semibold mb-2">Description</h2>
+
+        <p className="text-gray-700">
+          {report.description}
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 text-sm">
+
+          <div>
+            <p className="text-gray-500">Project</p>
+            <p className="font-medium">
+              {report.project_name || report.project_id}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Maintenance Level</p>
+            <p className="font-medium">
+              {report.maintenance_level
+                ? `Level ${report.maintenance_level}`
+                : "Not set"}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Submitted By</p>
+            <p className="font-medium">
+              {report.reporter?.full_name || report.reporter_name}
+            </p>
+          </div>
+
+      </div>
+    </div>
 
       {/* ----------------------------------------------------
           ATTACHMENTS
       ---------------------------------------------------- */}
-      <h2 className="text-xl font-semibold mt-6 mb-2">
+      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+
+      <h2 className="text-xl font-semibold mb-4">
         Attachments ({attachments.length})
       </h2>
 
       {attachments.length === 0 && (
         <p className="text-gray-500 text-sm">No attachments</p>
       )}
+    
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {attachments.map((att) => {
@@ -246,8 +421,7 @@ export default function ReportDetails() {
               // Convert blob to URL
               fileUrl = URL.createObjectURL(att.file || att.file_data);
             }
-
-
+        
           return (
           //   <div
           //     key={att.id}
@@ -270,7 +444,7 @@ export default function ReportDetails() {
           // );
             <div
                 key={att.id}
-                className="border rounded-md p-2 shadow-sm bg-white"
+                className="border border-border-light rounded-md p-2 shadow-sm bg-white"
               >
                 {/* Thumbnail Preview */}
                 {isImage ? (
@@ -324,7 +498,116 @@ export default function ReportDetails() {
             );
         })}
       </div>
+      </div>
 
+      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+
+      <h2 className="text-lg font-semibold mb-4">Communication</h2>
+
+      {/* Tabs */}
+      <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setActiveTab("public")}
+          className={`flex-1 py-2 text-sm rounded ${
+            activeTab === "public" ? "bg-white shadow" : ""
+          }`}
+        >
+          Public Reply
+        </button>
+
+        {isStaff && (
+          <button
+            onClick={() => setActiveTab("internal")}
+            className={`flex-1 py-2 text-sm rounded ${
+              activeTab === "internal" ? "bg-white shadow" : ""
+            }`}
+          >
+            Internal Notes
+          </button>
+        )}
+      </div>
+
+      {/* PUBLIC REPLY */}
+      {activeTab === "public" && (
+        <>
+          <textarea
+            value={publicReply}
+            onChange={(e) => setPublicReply(e.target.value)}
+            placeholder="Type your response to the user..."
+            className="w-full border rounded-lg p-3 text-sm"
+            rows={4}
+          />
+
+          <button
+            onClick={sendPublicReply}
+            className="mt-3 bg-black text-white px-4 py-2 rounded"
+          >
+            Send Response
+          </button>
+
+          {/* Display Previous Public Replies */}
+          <div className="mt-6 space-y-3">
+            {comments
+              .filter(c => !c.is_internal)
+              .map(c => (
+                <div key={c.id} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium">
+                      {c.user?.full_name || "Unknown"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(c.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-700">{c.message}</p>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
+      {/* INTERNAL NOTES */}
+      {activeTab === "internal" && (
+        <>
+          <textarea
+            value={internalNote}
+            onChange={(e) => setInternalNote(e.target.value)}
+            placeholder="Add internal troubleshooting notes..."
+            className="w-full border rounded-lg p-3 text-sm"
+            rows={4}
+          />
+
+          <button
+            onClick={sendInternalNote}
+            className="mt-3 bg-gray-800 text-white px-4 py-2 rounded"
+          >
+            Add Internal Note
+          </button>
+
+          {/* Display Previous Internal Notes */}
+          <div className="mt-6 space-y-3">
+            {comments
+              .filter(c => c.is_internal)
+              .map(c => (
+                <div key={c.id} className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium">
+                      {c.user?.full_name || "Unknown"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(c.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-700">{c.message}</p>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+
+      </div>
 
        {/* EDIT BUTTON */}
       <button
@@ -420,19 +703,24 @@ export default function ReportDetails() {
           </div>
         </div>
       )}
-
+</div>
 
       {/* ----------------------------------------------------
           STATUS TIMELINE
       ---------------------------------------------------- */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">Status Timeline</h2>
-      <div className="relative border-l-4 border-blue-600 pl-4 space-y-6">
+      <div className="bg-white border rounded-xl p-6 shadow-sm">
+
+      <h2 className="text-lg font-semibold mb-4">
+        Activity Timeline
+      </h2>
+
+      <div className="relative border-l-2 border-blue-500 pl-6 space-y-10">
 
         {timeline.map((item, i) => (
           <div key={i} className="relative">
 
             {/* Dot */}
-            <div className="absolute -left-3 top-1 w-4 h-4 bg-blue-600 rounded-full border-2 border-white"></div>
+            <div className="absolute -left-[10px] top-2.5 w-2 h-2 bg-blue-600 rounded-full"></div>
 
             {/* Title */}
             <p className="font-semibold">{item.label}</p>
@@ -454,6 +742,7 @@ export default function ReportDetails() {
         ))}
 
       </div>
+     </div> 
 
       
     </div>

@@ -7,6 +7,7 @@ export default function AssignReport() {
   const [reports, setReports] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [selectedTech, setSelectedTech] = useState({});
+  const [selectedLevel, setSelectedLevel] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -87,7 +88,12 @@ export default function AssignReport() {
   // ASSIGN ACTION (offline-first)
   // --------------------------
   async function handleAssign(reportId) {
+
+    const level = selectedLevel[reportId];
     const technicianId = selectedTech[reportId];
+
+    if (!technicianId) return alert("Please select technician");
+    if (!level) return alert("Please select maintenance level");
 
     if (!technicianId) return alert("Please select technician");
 
@@ -135,6 +141,7 @@ export default function AssignReport() {
     // 1) Update Dexie offline
     // --------------------------
     await db.reports.update(reportId, {
+      maintenance_level: Number(level),
       assigned_to: technicianId,
       assigned_at: new Date().toISOString(),
       status: "New",
@@ -153,6 +160,7 @@ export default function AssignReport() {
       const { error } = await supabase
         .from("reports")
         .update({
+          maintenance_level: Number(level),
           assigned_to: technicianId,
           assigned_at: new Date().toISOString(),
           status: "New",
@@ -202,7 +210,15 @@ export default function AssignReport() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">📋 Assign Reports</h1>
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">Assign Reports</h1>
+          <p className="text-gray-500 text-sm">
+            View unassigned reports and assign to technicians
+          </p>
+        </div>
+      </div>
+
 
       {reports.length === 0 && (
         <p className="text-gray-500">No reports pending assignment</p>
@@ -210,23 +226,60 @@ export default function AssignReport() {
 
       <div className="grid gap-5">
         {reports.map((r) => (
-          <div key={r.id} className="p-4 bg-white shadow rounded-lg border">
-            <p className="font-bold text-lg">{r.title || "Untitled Report"}</p>
-            <p className="text-sm text-gray-600">{r.description}</p>
-
-            {r.project_name && (
-              <div className="text-sm text-gray-500 mt-1">
-                Project: {r.project_name}
+          <div
+            key={r.id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="font-semibold text-sm">{r.title || "Untitled Report"}</p>
+                <p className="text-xs text-gray-500">
+                  #{r.ticket_no} • {new Date(r.created_at).toLocaleDateString()}
+                </p>
               </div>
-            )}
 
-            <div className="text-sm text-gray-500 mt-1">
-              Submitted by: {r.reporter?.full_name || r.reporter_name || r.user_id}
+              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-medium">
+                Submitted
+              </span>
             </div>
 
-            <div className="flex gap-3 mt-3">
+            {/* Description */}
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+              {r.description}
+            </p>
+
+            {/* Info Row */}
+            <div className="flex justify-between text-xs text-gray-500 mb-3">
+              <span>Project: {r.project_name || "-"}</span>
+              <span>Maintenance Level: {r.maintenance_level || "-"}</span>
+              <span>
+                By: {r.reporter?.full_name || r.reporter_name || r.user_id}
+              </span>
+            </div>
+
+
+            <div className="flex gap-2">
+              {/* Maintenance Level */}
               <select
-                className="border p-2 rounded w-full"
+                className="border border-gray-200 rounded-md px-2 py-1 text-sm"
+                value={selectedLevel[r.id] || ""}
+                onChange={(e) =>
+                  setSelectedLevel({
+                    ...selectedLevel,
+                    [r.id]: e.target.value
+                  })
+                }
+              >
+                <option value="">Maintenance Level</option>
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+              </select>
+
+              {/* Technician Selection */}
+              <select
+                className="border border-gray-200 rounded-md px-2 py-1 text-sm flex-1"
                 value={selectedTech[r.id] || ""}
                 onChange={(e) =>
                   setSelectedTech({
@@ -235,20 +288,27 @@ export default function AssignReport() {
                   })
                 }
               >
-                <option value="">Select technician</option>
-                {technicians.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.full_name || t.id}
+                <option value="">Select Technician</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.full_name}
                   </option>
                 ))}
               </select>
 
+              {/* Assign Button */}
               <button
                 onClick={() => handleAssign(r.id)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                disabled={!selectedTech[r.id] || !selectedLevel[r.id]}
+                className={`px-4 py-1 rounded-md text-sm font-medium text-white
+                  ${!selectedTech[r.id] || !selectedLevel[r.id]
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                  }`}
               >
                 Assign
               </button>
+
             </div>
           </div>
         ))}
