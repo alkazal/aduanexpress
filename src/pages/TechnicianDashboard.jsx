@@ -11,6 +11,18 @@ function statusColor(status) {
   return "text-gray-600";
 }
 
+function isNetworkLikeError(error) {
+  if (!error) return false;
+
+  const message = `${error.message || ""} ${error.details || ""}`.toLowerCase();
+  return (
+    error.name === "TypeError" ||
+    message.includes("failed to fetch") ||
+    message.includes("network") ||
+    message.includes("load failed")
+  );
+}
+
 export default function TechnicianDashboard() {
   const [reports, setReports] = useState([]);
   const [statusUpdates, setStatusUpdates] = useState({});
@@ -160,7 +172,13 @@ export default function TechnicianDashboard() {
 
       if (error) {
         console.error("SUPABASE UPDATE ERROR:", error);
-        alert("Offline saved — will sync later");
+
+        if (isNetworkLikeError(error)) {
+          alert("Saved offline - network unavailable, will sync later");
+        } else {
+          alert(`Status update failed: ${error.message || "Unknown Supabase error"}`);
+        }
+
         return;
       }
       if (!error) {
