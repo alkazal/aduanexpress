@@ -175,11 +175,16 @@ export default function TechnicianDashboard() {
         console.error("SUPABASE UPDATE ERROR:", error);
 
         if (isNetworkLikeError(error)) {
-          alert("Saved offline - network unavailable, will sync later");
+          alert("Saved offline - will sync when connection is stable");
+          // Schedule a background sync retry so it doesn't rely solely on the
+          // browser "online" event (which is unreliable on mobile).
+          setTimeout(() => syncReports(), 5000);
         } else {
           alert(`Status update failed: ${error.message || "Unknown Supabase error"}`);
         }
 
+        // Reload from local Dexie so the UI reflects the locally-saved change.
+        loadReports();
         return;
       }
       if (!error) {

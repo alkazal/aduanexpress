@@ -349,7 +349,9 @@ export async function syncReports() {
           changed_by_name
         )
       `)
-      .eq("user_id", user.id);
+      // Pull both reports the user created AND reports assigned to them
+      // (technicians have assigned_to = user.id, not user_id = user.id)
+      .or(`user_id.eq.${user.id},assigned_to.eq.${user.id}`);
 
     if (onlineReports) {
       for (const r of onlineReports) {
