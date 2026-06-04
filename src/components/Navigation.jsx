@@ -116,6 +116,10 @@ export default function Navigation() {
           <NavLink to="/users" className={linkClass}>Users</NavLink>
         )}
 
+        {role === "manager" && (
+          <NavLink to="/projects" className={linkClass}>Projects</NavLink>
+        )}
+
         {role === "technician" && (
           <NavLink to="/technician" className={linkClass}>Technician Board</NavLink>
         )}
@@ -170,6 +174,13 @@ export default function Navigation() {
             <NavLink to="/users" className={mobileLinkClass}>
               <UsersIcon className="w-6 h-6" />
               <span className="text-xs">Users</span>
+            </NavLink>
+          )}
+
+          {role === "manager" && (
+            <NavLink to="/projects" className={mobileLinkClass}>
+              <ClipboardDocumentListIcon className="w-6 h-6" />
+              <span className="text-xs">Projects</span>
             </NavLink>
           )}
 

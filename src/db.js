@@ -6,7 +6,7 @@ export const db = new Dexie("report_db");
 //   reports: "id, report_type, title, description, synced, to_delete, created_at, user_id",
 //   attachments: "id, report_id, user_id, synced, to_delete"
 // });
-db.version(7).stores({
+db.version(8).stores({
   reports: `
     id,
     user_id,
@@ -20,6 +20,9 @@ db.version(7).stores({
     report_type,
     title,
     description,
+    requestor_name,
+    requestor_phone_no,
+    request_datetime,
     status,
     synced,
     to_delete,

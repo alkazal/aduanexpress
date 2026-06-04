@@ -12,6 +12,9 @@ export default function NewReport() {
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [requestorName, setRequestorName] = useState("");
+  const [requestorPhoneNo, setRequestorPhoneNo] = useState("");
+  const [requestDatetime, setRequestDatetime] = useState("");
   const [attachments, setAttachments] = useState([]); // multiple files
   const [error, setError] = useState(null);
   const [progressMap, setProgressMap] = useState({});
@@ -119,6 +122,9 @@ export default function NewReport() {
       project_name: selectedProject?.name || null,
       title,
       description,
+      requestor_name: requestorName,
+      requestor_phone_no: requestorPhoneNo,
+      request_datetime: requestDatetime ? new Date(requestDatetime).toISOString() : null,
       created_at: createdAt,
       user_id: user.id,
       synced: false,
@@ -219,6 +225,40 @@ return (
               rows="4"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1">Requestor Name</label>
+              <input
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={requestorName}
+                onChange={(e) => setRequestorName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1">Requestor Phone No</label>
+              <input
+                type="tel"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={requestorPhoneNo}
+                onChange={(e) => setRequestorPhoneNo(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-medium mb-1">Datetime Request</label>
+            <input
+              type="datetime-local"
+              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={requestDatetime}
+              onChange={(e) => setRequestDatetime(e.target.value)}
               required
             />
           </div>

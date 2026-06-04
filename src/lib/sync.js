@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import { db } from "../db";
 import { emitSyncStatus, emitReportSynced } from "./syncEvents";
+import { toReportServerPayload } from "./reportPayload";
 
 /* ===============================
    HELPER: Detect MIME TYPE
@@ -192,23 +193,18 @@ export async function syncReports() {
       // ----------------------------------------------------------
       // Build safe payload (NEVER overwrite user_id if exists online)
       // ----------------------------------------------------------
-      const payload = {
-        id: reportId,
-        title: report.title,
-        description: report.description,
-        report_type: report.report_type,
-        project_id: report.project_id || null,
-        status: report.status,
-        assigned_to: report.assigned_to,
-        assigned_at: report.assigned_at,
-        created_at: safeDate(report.created_at),
-        updated_at: new Date().toISOString(),
-      };
-
-      // Only include user_id if this report was created locally first
-      if (!report._synced_once) {
-        payload.user_id = report.user_id;
-      }
+      const payload = toReportServerPayload(
+        {
+          ...report,
+          id: reportId,
+          created_at: safeDate(report.created_at),
+          updated_at: new Date().toISOString()
+        },
+        {
+          includeId: true,
+          includeUserId: !report._synced_once
+        }
+      );
 
       try {
         // For reports already synced to the server (_synced_once), use plain UPDATE.
@@ -219,18 +215,21 @@ export async function syncReports() {
 
         if (report._synced_once) {
           console.log("⬆️ UPDATE (existing):", reportId);
+          const updatePayload = toReportServerPayload(
+            {
+              ...report,
+              updated_at: report.updated_at || new Date().toISOString(),
+              updated_by: report.updated_by || null
+            },
+            {
+              includeId: false,
+              includeUserId: false
+            }
+          );
+
           const { error } = await supabase
             .from("reports")
-            .update({
-              status: report.status,
-              title: report.title,
-              description: report.description,
-              project_id: report.project_id || null,
-              assigned_to: report.assigned_to,
-              assigned_at: report.assigned_at,
-              updated_at: report.updated_at || new Date().toISOString(),
-              updated_by: report.updated_by || null,
-            })
+            .update(updatePayload)
             .eq("id", reportId);
           upErr = error;
         } else {

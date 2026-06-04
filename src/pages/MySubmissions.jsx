@@ -23,7 +23,10 @@ export default function MySubmissions() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+  const PAGE_SIZE = 10;
   
 
   const loadData = async () => {
@@ -80,7 +83,8 @@ export default function MySubmissions() {
           ...r,
           submitted_by: r.user_profiles?.full_name || "Unknown",
           assigned_to: r.technician?.full_name || "Unknown",
-          project_name: r.project?.name || r.project_name || null
+          project_name: r.project?.name || r.project_name || r.project_id || null,
+          project_key: r.project_id || r.project?.name || r.project_name || "NO_PROJECT"
         }));
       }
     } else {
@@ -103,7 +107,8 @@ export default function MySubmissions() {
           ? r.reporter_name || "User"
           : r.reporter_name || "You",
         assigned_to: r.technician_name,
-        project_name: r.project_name || null
+        project_name: r.project_name || r.project_id || null,
+        project_key: r.project_id || r.project_name || "NO_PROJECT"
       }));
     }
 
@@ -123,13 +128,21 @@ export default function MySubmissions() {
 
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
+
   const projectOptions = Array.from(
-    new Set(items.map((r) => r.project_name).filter(Boolean))
-  ).sort((a, b) => a.localeCompare(b));
+    new Map(
+      items
+        .filter((r) => r.project_key)
+        .map((r) => [r.project_key, r.project_name || "Unknown Project"])
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
 
   const filteredItems = items.filter((r) => {
     const matchProject = selectedProject
-      ? r.project_name === selectedProject
+      ? (r.project_key || "") === selectedProject
       : true;
 
     const matchStatus = selectedStatus
@@ -140,8 +153,42 @@ export default function MySubmissions() {
     const matchStart = startDate ? createdDate >= startDate : true;
     const matchEnd = endDate ? createdDate <= endDate : true;
 
-    return matchProject && matchStatus && matchStart && matchEnd;
+    const keyword = searchTerm.trim().toLowerCase();
+    const matchSearch = keyword
+      ? [
+          r.ticket_no,
+          r.title,
+          r.submitted_by,
+          r.assigned_to,
+          r.project_name,
+          r.status
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(keyword))
+      : true;
+
+    return matchProject && matchStatus && matchStart && matchEnd && matchSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedItems = filteredItems.slice(startIndex, startIndex + PAGE_SIZE);
+  const hasActiveFilters =
+    Boolean(selectedProject) ||
+    Boolean(selectedStatus) ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
+    Boolean(searchTerm.trim());
+
+  function clearFilters() {
+    setSelectedProject("");
+    setSelectedStatus("");
+    setStartDate("");
+    setEndDate("");
+    setSearchTerm("");
+    setCurrentPage(1);
+  }
 
   const totalReports = filteredItems.length; // total changes when status clicked
 
@@ -162,13 +209,32 @@ export default function MySubmissions() {
               onChange={(e) => setSelectedProject(e.target.value)}
             >
               <option value="">All Projects</option>
-              {projectOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {projectOptions.map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
                 </option>
               ))}
             </select>
           </div>
+
+          <div className="w-full sm:flex-1">
+            <input
+              type="text"
+              className="w-full border border-border-light rounded-md p-2 text-sm"
+              placeholder="Search ticket, title, project, status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+            className="h-10 px-3 rounded-md border border-border-light text-sm text-gray-700 bg-white disabled:opacity-50"
+          >
+            Clear Filters
+          </button>
 
           <div className="w-full sm:w-auto flex flex-col">
             <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
@@ -264,7 +330,7 @@ export default function MySubmissions() {
 
           <tbody>
 
-            {filteredItems.map((x) => (
+            {pagedItems.map((x) => (
               <tr
                 key={x.id}
                 onClick={() => navigate(`/report/${x.id}`)}
@@ -308,6 +374,33 @@ export default function MySubmissions() {
         </table>
 
       </div>
+
+      {!loading && filteredItems.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-sm">
+          <p className="text-gray-500">
+            Showing {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, filteredItems.length)} of {filteredItems.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <span className="text-gray-600">Page {safePage} / {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

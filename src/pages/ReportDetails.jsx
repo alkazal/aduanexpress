@@ -387,6 +387,25 @@ export default function ReportDetails() {
             </p>
           </div>
 
+          <div>
+            <p className="text-gray-500">Requestor Name</p>
+            <p className="font-medium">{report.requestor_name || "-"}</p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Requestor Phone No</p>
+            <p className="font-medium">{report.requestor_phone_no || "-"}</p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Datetime Request</p>
+            <p className="font-medium">
+              {report.request_datetime
+                ? new Date(report.request_datetime).toLocaleString()
+                : "-"}
+            </p>
+          </div>
+
       </div>
     </div>
 

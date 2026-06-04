@@ -20,6 +20,14 @@ export default function EditReport() {
   const [compressing, setCompressing] = useState(false);
   const [projects, setProjects] = useState([]);
 
+  function toDateTimeLocalValue(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  }
+
   // -----------------------------
   // LOAD REPORT (offline first)
   // -----------------------------
@@ -281,6 +289,44 @@ export default function EditReport() {
         value={report.description || ""}
         onChange={(e) =>
           setReport({ ...report, description: e.target.value })
+        }
+        className="border w-full p-2 rounded mb-3"
+      />
+
+      <label className="block text-sm mb-1 font-semibold">
+        Requestor Name
+      </label>
+      <input
+        value={report.requestor_name || ""}
+        onChange={(e) =>
+          setReport({ ...report, requestor_name: e.target.value })
+        }
+        className="border w-full p-2 rounded mb-3"
+      />
+
+      <label className="block text-sm mb-1 font-semibold">
+        Requestor Phone No
+      </label>
+      <input
+        type="tel"
+        value={report.requestor_phone_no || ""}
+        onChange={(e) =>
+          setReport({ ...report, requestor_phone_no: e.target.value })
+        }
+        className="border w-full p-2 rounded mb-3"
+      />
+
+      <label className="block text-sm mb-1 font-semibold">
+        Datetime Request
+      </label>
+      <input
+        type="datetime-local"
+        value={toDateTimeLocalValue(report.request_datetime)}
+        onChange={(e) =>
+          setReport({
+            ...report,
+            request_datetime: e.target.value ? new Date(e.target.value).toISOString() : null
+          })
         }
         className="border w-full p-2 rounded mb-3"
       />

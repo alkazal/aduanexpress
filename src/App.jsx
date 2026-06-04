@@ -17,6 +17,7 @@ import CloseReport from "./pages/ManagerCloseReport";
 import EditProfile from "./pages/EditProfile";
 import UsersList from "./pages/UsersList";
 import UserProfile from "./pages/UserProfile";
+import Projects from "./pages/Projects";
 
 import TestSession from "./TestSession"
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -114,6 +115,14 @@ function AppContent() {
             element={
               <PrivateRoute role="manager">
                 <UserProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <PrivateRoute role="manager">
+                <Projects />
               </PrivateRoute>
             }
           />

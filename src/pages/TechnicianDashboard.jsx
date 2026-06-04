@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
+import { toReportServerPayload } from "../lib/reportPayload";
 
 import {
   Inbox,
@@ -327,16 +328,10 @@ export default function TechnicianDashboard() {
     // 2) Try Supabase
     // --------------------------
     if (navigator.onLine) {
-      const serverUpdates = {
-        updated_at: updates.updated_at,
-        updated_by: updates.updated_by,
-        ...(Object.prototype.hasOwnProperty.call(updates, "status")
-          ? { status: updates.status }
-          : {}),
-        ...(Object.prototype.hasOwnProperty.call(updates, "maintenance_level")
-          ? { maintenance_level: updates.maintenance_level }
-          : {})
-      };
+      const serverUpdates = toReportServerPayload(updates, {
+        includeId: false,
+        includeUserId: false
+      });
 
       const { error } = await supabase
         .from("reports")
