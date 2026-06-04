@@ -25,6 +25,7 @@ export default function MySubmissions() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
   
@@ -129,6 +130,16 @@ export default function MySubmissions() {
   }, []);
 
   useEffect(() => {
+    const onScroll = () => {
+      setIsMobileHeaderCompact(window.scrollY > 24);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
 
@@ -140,13 +151,9 @@ export default function MySubmissions() {
     ).entries()
   ).sort((a, b) => a[1].localeCompare(b[1]));
 
-  const filteredItems = items.filter((r) => {
+  const baseFilteredItems = items.filter((r) => {
     const matchProject = selectedProject
       ? (r.project_key || "") === selectedProject
-      : true;
-
-    const matchStatus = selectedStatus
-      ? r.status === selectedStatus
       : true;
 
     const createdDate = new Date(r.created_at).toISOString().slice(0, 10);
@@ -167,8 +174,12 @@ export default function MySubmissions() {
           .some((v) => String(v).toLowerCase().includes(keyword))
       : true;
 
-    return matchProject && matchStatus && matchStart && matchEnd && matchSearch;
+    return matchProject && matchStart && matchEnd && matchSearch;
   });
+
+  const filteredItems = baseFilteredItems.filter((r) =>
+    selectedStatus ? r.status === selectedStatus : true
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -190,15 +201,20 @@ export default function MySubmissions() {
     setCurrentPage(1);
   }
 
-  const totalReports = filteredItems.length; // total changes when status clicked
+  const totalReports = filteredItems.length;
 
-  const openReports = items.filter((r) => r.status === "Open").length;
-  const pendingReports = items.filter((r) => r.status === "Pending").length;
-  const resolvedReports = items.filter((r) => r.status === "Resolved").length;
+  const openReports = baseFilteredItems.filter((r) => r.status === "Open").length;
+  const pendingReports = baseFilteredItems.filter((r) => r.status === "Pending").length;
+  const resolvedReports = baseFilteredItems.filter((r) => r.status === "Resolved").length;
 
   return (
     <div className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div
+        className={`sticky top-0 z-20 -mx-6 px-6 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
+        } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
+      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Reports</h1>
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
 
@@ -260,6 +276,54 @@ export default function MySubmissions() {
         </div>
       </div>
 
+      <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === ""
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          All ({baseFilteredItems.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Open")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Open"
+              ? "bg-yellow-500 text-white border-yellow-500"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Open ({openReports})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Pending")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Pending"
+              ? "bg-orange-500 text-white border-orange-500"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Pending ({pendingReports})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Resolved")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Resolved"
+              ? "bg-green-600 text-white border-green-600"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Resolved ({resolvedReports})
+        </button>
+      </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       {/* Total */}
       <div
@@ -313,7 +377,35 @@ export default function MySubmissions() {
         <p className="text-gray-500">You have no report submissions yet.</p>
       )}
 
-      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto">
+      {!loading && pagedItems.length > 0 && (
+        <div className="mt-4 space-y-3 sm:hidden">
+          {pagedItems.map((x) => (
+            <button
+              key={x.id}
+              type="button"
+              onClick={() => navigate(`/report/${x.id}`)}
+              className="w-full text-left bg-white shadow rounded-xl p-4 border border-gray-100"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-500">Ticket #{x.ticket_no}</p>
+                  <h3 className="font-semibold text-gray-900 truncate">{x.title}</h3>
+                </div>
+                <span className={statusBadge(x.status)}>{x.status}</span>
+              </div>
+
+              <div className="mt-2 text-xs text-gray-600 space-y-1">
+                <p>Submitted by: {x.submitted_by || "-"}</p>
+                <p>Project: {x.project_name || "-"}</p>
+                <p>Assigned to: {x.assigned_to || "-"}</p>
+                <p>Created: {new Date(x.created_at).toLocaleDateString()}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto hidden sm:block">
 
         <table className="min-w-[700px] w-full text-sm text-left">
 

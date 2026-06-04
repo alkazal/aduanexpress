@@ -31,6 +31,8 @@ export default function TechnicianDashboard() {
   const [selectedProject, setSelectedProject] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
   const [levelUpdates, setLevelUpdates] = useState({});
   const navigate = useNavigate();
 
@@ -46,6 +48,16 @@ export default function TechnicianDashboard() {
     window.addEventListener("online", handleOnline);
 
     return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsMobileHeaderCompact(window.scrollY > 24);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   async function loadReports() {
@@ -232,7 +244,7 @@ export default function TechnicianDashboard() {
     new Set(reports.map((r) => r.project_name).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
 
-  const filteredReports = reports.filter((r) => {
+  const baseFilteredReports = reports.filter((r) => {
     const matchProject = selectedProject
       ? r.project_name === selectedProject
       : true;
@@ -244,10 +256,14 @@ export default function TechnicianDashboard() {
     return matchProject && matchStart && matchEnd;
   });
 
+  const filteredReports = baseFilteredReports.filter((r) =>
+    selectedStatus ? r.status === selectedStatus : true
+  );
+
   const statusCounts = {
-    OPEN: filteredReports.filter(r => r.status === "Open").length,
-    PENDING: filteredReports.filter(r => r.status === "Pending").length,
-    RESOLVED: filteredReports.filter(r => r.status === "Resolved").length
+    OPEN: baseFilteredReports.filter(r => r.status === "Open").length,
+    PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
+    RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
 
   function statusColor(status) {
@@ -374,7 +390,12 @@ export default function TechnicianDashboard() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div
+        className={`sticky top-0 z-20 -mx-6 px-6 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
+        } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
+      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="w-full sm:w-auto">
           <h1 className="text-2xl font-bold">Technician Dashboard</h1>
           <p className="text-gray-500 text-sm">
@@ -423,6 +444,54 @@ export default function TechnicianDashboard() {
           />
           </div>
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === ""
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          All ({baseFilteredReports.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Open")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Open"
+              ? "bg-yellow-500 text-white border-yellow-500"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Open ({statusCounts.OPEN})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Pending")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Pending"
+              ? "bg-orange-500 text-white border-orange-500"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Pending ({statusCounts.PENDING})
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedStatus("Resolved")}
+          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+            selectedStatus === "Resolved"
+              ? "bg-green-600 text-white border-green-600"
+              : "bg-white text-gray-700 border-gray-200"
+          }`}
+        >
+          Resolved ({statusCounts.RESOLVED})
+        </button>
+      </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -497,7 +566,89 @@ export default function TechnicianDashboard() {
         <p className="text-gray-500">No assigned reports</p>
       )}
 
-      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto">
+      {filteredReports.length > 0 && (
+        <div className="mt-4 space-y-3 sm:hidden">
+          {filteredReports.map((r) => (
+            <div key={r.id} className="bg-white shadow rounded-xl p-4 border border-gray-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-500">Ticket #{r.ticket_no}</p>
+                  <h3 className="font-semibold text-gray-900 truncate">{r.title}</h3>
+                </div>
+                <span className={`text-xs whitespace-nowrap ${statusColor(r.status)}`}>
+                  {r.status}
+                </span>
+              </div>
+
+              <div className="mt-2 text-xs text-gray-600 space-y-1">
+                <p>Project: {r.project_name || "-"}</p>
+                <p>Created: {new Date(r.created_at).toLocaleDateString()}</p>
+              </div>
+
+              <p className="mt-2 text-xs text-gray-500 line-clamp-2">
+                {r.description || "No description"}
+              </p>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <select
+                  className="border border-border-light p-2 rounded text-xs"
+                  value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
+                  onChange={(e) =>
+                    setLevelUpdates({
+                      ...levelUpdates,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Level</option>
+                  <option value="1">L1</option>
+                  <option value="2">L2</option>
+                  <option value="3">L3</option>
+                </select>
+
+                <select
+                  className="border border-border-light p-2 rounded text-xs"
+                  value={statusUpdates[r.id] || ""}
+                  onChange={(e) =>
+                    setStatusUpdates({
+                      ...statusUpdates,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Change</option>
+                  <option value="Open">Open</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => updateReport(r.id)}
+                  disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
+                  className={`flex-1 px-3 py-2 rounded text-xs text-white ${
+                    !statusUpdates[r.id] && !levelUpdates[r.id]
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  Update
+                </button>
+
+                <button
+                  onClick={() => navigate(`/report/${r.id}`)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded"
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto hidden sm:block">
       <div className="w-full overflow-x-auto">
 
       <table className="min-w-[900px] w-full text-sm text-left">
