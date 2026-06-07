@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 import { toReportServerPayload } from "../lib/reportPayload";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -41,9 +40,12 @@ export default function TechnicianDashboard() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
   const [levelUpdates, setLevelUpdates] = useState({});
   const navigate = useNavigate();
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadReports();
@@ -270,7 +272,20 @@ export default function TechnicianDashboard() {
     const matchStart = startDate ? createdDate >= startDate : true;
     const matchEnd = endDate ? createdDate <= endDate : true;
 
-    return matchProject && matchStart && matchEnd;
+    const keyword = searchTerm.trim().toLowerCase();
+    const matchSearch = keyword
+      ? [
+          r.ticket_no,
+          r.title,
+          r.description,
+          r.project_name,
+          r.status,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(keyword))
+      : true;
+
+    return matchProject && matchStart && matchEnd && matchSearch;
   });
 
   const filteredReports = baseFilteredReports.filter((r) =>
@@ -282,6 +297,31 @@ export default function TechnicianDashboard() {
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
     RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
+
+  const hasActiveFilters =
+    Boolean(selectedProject) ||
+    Boolean(selectedStatus) ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
+    Boolean(searchTerm.trim());
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredReports.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const pagedReports = filteredReports.slice(startIndex, startIndex + PAGE_SIZE);
+
+  function clearFilters() {
+    setSelectedProject("");
+    setSelectedStatus("");
+    setStartDate("");
+    setEndDate("");
+    setSearchTerm("");
+    setCurrentPage(1);
+  }
 
   async function updateReport(reportId) {
     const newStatus = statusUpdates[reportId];
@@ -406,8 +446,8 @@ export default function TechnicianDashboard() {
             Update your personal information 
           </p>
         </div>
-        <div className="grid grid-cols-1 min-[520px]:grid-cols-3 gap-3 w-full sm:max-w-2xl">
-          <div className="w-full">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
+          <div className="w-full sm:flex-1">
             <Label className="text-xs font-semibold text-gray-700 mb-1">
               Project
             </Label>
@@ -423,6 +463,25 @@ export default function TechnicianDashboard() {
             ))}
           </Select>
         </div>  
+
+          <div className="w-full sm:flex-1">
+            <Input
+              type="text"
+              placeholder="Search ticket, title, project, status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <Button
+            type="button"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+            variant="outline"
+            className="h-10"
+          >
+            Clear Filters
+          </Button>
 
           <div className="w-full flex flex-col">
           <Label className="text-xs font-semibold text-gray-700 mb-1">
@@ -502,10 +561,15 @@ export default function TechnicianDashboard() {
       </div>
       </div>
 
-      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
         {/* Assigned Tickets */}
-        <Card>
+        <Card
+          onClick={() => setSelectedStatus("")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "" ? "ring-2 ring-blue-500" : ""
+          }`}
+        >
           <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
@@ -523,7 +587,12 @@ export default function TechnicianDashboard() {
         </Card>
 
         {/* Open */}
-        <Card>
+        <Card
+          onClick={() => setSelectedStatus("Open")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Open" ? "ring-2 ring-yellow-500" : ""
+          }`}
+        >
           <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
@@ -541,7 +610,12 @@ export default function TechnicianDashboard() {
         </Card>
 
         {/* Pending */}
-        <Card>
+        <Card
+          onClick={() => setSelectedStatus("Pending")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Pending" ? "ring-2 ring-orange-500" : ""
+          }`}
+        >
           <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
@@ -559,7 +633,12 @@ export default function TechnicianDashboard() {
         </Card>
 
         {/* Resolved */}
-        <Card>
+        <Card
+          onClick={() => setSelectedStatus("Resolved")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Resolved" ? "ring-2 ring-green-500" : ""
+          }`}
+        >
           <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
@@ -586,7 +665,7 @@ export default function TechnicianDashboard() {
 
       {filteredReports.length > 0 && (
         <div className="mt-4 space-y-3 sm:hidden">
-          {filteredReports.map((r) => (
+          {pagedReports.map((r) => (
             <Card key={r.id} className="border-gray-100">
               <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
@@ -680,7 +759,7 @@ export default function TechnicianDashboard() {
 
         <TableBody>
 
-          {filteredReports.map((r) => (
+          {pagedReports.map((r) => (
 
             <TableRow
               key={r.id}
@@ -773,6 +852,34 @@ export default function TechnicianDashboard() {
     </div>
 
     </Card>
+
+    {filteredReports.length > 0 && (
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-sm text-gray-500">
+          Page {safePage} of {totalPages}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    )}
 
     </div>
   );
