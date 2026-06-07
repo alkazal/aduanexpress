@@ -393,11 +393,11 @@ export default function TechnicianDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div
-        className={`sticky top-0 z-20 -mx-6 px-6 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+        className={`sticky top-16 z-20 mx-0 px-0 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
           isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
-        } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
+        } sm:static sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="w-full sm:w-auto">
@@ -406,8 +406,11 @@ export default function TechnicianDashboard() {
             Update your personal information 
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
-          <div className="w-full sm:flex-1">
+        <div className="grid grid-cols-1 min-[520px]:grid-cols-3 gap-3 w-full sm:max-w-2xl">
+          <div className="w-full">
+            <Label className="text-xs font-semibold text-gray-700 mb-1">
+              Project
+            </Label>
             <Select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
@@ -421,7 +424,7 @@ export default function TechnicianDashboard() {
           </Select>
         </div>  
 
-          <div className="w-full sm:w-auto flex flex-col">
+          <div className="w-full flex flex-col">
           <Label className="text-xs font-semibold text-gray-700 mb-1">
             Start Date
           </Label>
@@ -433,7 +436,7 @@ export default function TechnicianDashboard() {
           />
           </div>
 
-          <div className="w-full sm:w-auto flex flex-col">
+          <div className="w-full flex flex-col">
           <Label className="text-xs font-semibold text-gray-700 mb-1">
             End Date
           </Label>
@@ -447,7 +450,7 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
+      <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
         <Button
           type="button"
           onClick={() => setSelectedStatus("")}
@@ -499,7 +502,7 @@ export default function TechnicianDashboard() {
       </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
         {/* Assigned Tickets */}
         <Card>
