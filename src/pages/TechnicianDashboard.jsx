@@ -71,6 +71,10 @@ export default function TechnicianDashboard() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
+
   async function loadReports() {
     setLoading(true);
 
@@ -304,10 +308,6 @@ export default function TechnicianDashboard() {
     Boolean(startDate) ||
     Boolean(endDate) ||
     Boolean(searchTerm.trim());
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredReports.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
