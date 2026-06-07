@@ -12,10 +12,12 @@ import {
   Clock, 
   AlertCircle, 
   CheckCircle, 
+  FileText,
+  FolderOpen,
+  Lock,
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  Star
 } from 'lucide-react';
 
 import {  
@@ -30,6 +32,16 @@ import {
   Pie,
   Cell
 } from "recharts";
+
+import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -218,11 +230,74 @@ const projectChartData = Object.values(
 );
 
   return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Welcome, {user?.email ?? "User"}!
-      </h1>
-
+    <div>
+      
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+        <CardHeader>
+          <CardDescription className="flex w-full items-center justify-between gap-2">
+            <span>Total Reports</span>
+            <FileText className="size-4 text-slate-600" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {totalReports}
+          </CardTitle>
+          
+        </CardHeader>
+      </Card>
+      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+        <CardHeader>
+          <CardDescription className="flex w-full items-center justify-between gap-2">
+            <span>Open Reports</span>
+            <FolderOpen className="size-4 text-blue-600" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {statusCounts.OPEN}
+          </CardTitle>
+          
+        </CardHeader>
+       
+      </Card>
+      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+        <CardHeader>
+          <CardDescription className="flex w-full items-center justify-between gap-2">
+            <span>Pending Reports</span>
+            <AlertCircle className="size-4 text-amber-600" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {statusCounts.PENDING}
+          </CardTitle>
+          
+        </CardHeader>
+        
+      </Card>
+      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+        <CardHeader>
+          <CardDescription className="flex w-full items-center justify-between gap-2">
+            <span>Resolved Reports</span>
+            <CheckCircle className="size-4 text-emerald-600" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {statusCounts.RESOLVED}
+          </CardTitle>
+          
+        </CardHeader>
+        
+        </Card>
+        <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+        <CardHeader>
+          <CardDescription className="flex w-full items-center justify-between gap-2">
+            <span>Closed Reports</span>
+            <Lock className="size-4 text-gray-600" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {statusCounts.CLOSED}
+          </CardTitle>
+         
+        </CardHeader>
+        
+      </Card>
+      </div>
       
       {/* <div className="p-4 border rounded">
         <button onClick={wakePushWorker} className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded mt-2">
@@ -236,11 +311,8 @@ const projectChartData = Object.values(
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-
-        {/* Total Reports */}
+      {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
-          
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Total Reports</p>
             <p className="text-4xl font-bold text-gray-700">{totalReports}</p>
@@ -249,14 +321,11 @@ const projectChartData = Object.values(
               <span>+{statusCounts.NEW} New</span>
             </div>
           </div>
-
-          {/* Icon */}
           <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
             <Inbox className="h-6 w-6 text-blue-600" />
           </div>
         </div>
 
-        {/* Open + Pending Sync Card */}
         <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
           
           <div className="flex flex-col gap-2">
@@ -268,13 +337,11 @@ const projectChartData = Object.values(
               </p>
           </div>
 
-          {/* Icon */}
           <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
             <Clock className="h-6 w-6 text-purple-600" />
           </div>
         </div>
 
-        {/* Pending */}
         <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
           
           <div className="flex flex-col gap-2">
@@ -283,13 +350,11 @@ const projectChartData = Object.values(
             <p className="text-xs text-red-500">Needs Attention</p>
           </div>
 
-          {/* Icon */}
           <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
             <AlertCircle className="h-6 w-6 text-red-600" />
           </div>
         </div>
 
-        {/* Resolved */}
         <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Resolved</p>
@@ -297,13 +362,11 @@ const projectChartData = Object.values(
             <p className="text-xs text-gray-500">Completed</p>
           </div>
 
-          {/* Icon */}
           <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
         </div>
 
-        {/* Closed */}
         <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
           
           <div className="flex flex-col gap-2">
@@ -312,13 +375,12 @@ const projectChartData = Object.values(
             <p className="text-xs text-gray-500">No follow-up</p>
           </div>
 
-          {/* Icon */}
           <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
             <CheckCircle className="h-6 w-6 text-gray-700" />
           </div>
         </div>
 
-      </div>
+      </div> */}
 
       {/* Stacked Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
