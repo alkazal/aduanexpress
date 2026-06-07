@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { Alert, AlertDescription } from "./ui/alert";
+import { cn } from "../lib/utils";
 
 export default function Toast({ message, type = "success", duration = 3000, onClose }) {
   useEffect(() => {
@@ -9,8 +11,14 @@ export default function Toast({ message, type = "success", duration = 3000, onCl
   if (!message) return null;
 
   return (
-    <div className={`fixed bottom-5 right-5 text-white px-4 py-2 rounded shadow-lg z-50 ${type === "error" ? "bg-red-600" : "bg-green-600"}`}>
-      {message}
-    </div>
+    <Alert
+      className={cn(
+        "fixed bottom-5 right-5 z-50 w-auto border-0 px-4 py-2 text-white shadow-lg",
+        type === "error" ? "bg-red-600" : "bg-green-600"
+      )}
+      aria-live="polite"
+    >
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
   );
 }

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Select } from "../components/ui/select";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -146,7 +152,15 @@ export default function EditProfile() {
     setSaving(false);
   };
 
-  if (loading) return <p className="p-6">Loading profile...</p>;
+  if (loading) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>Loading profile...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 w-full min-h-screen bg-gray-100">
@@ -160,28 +174,33 @@ export default function EditProfile() {
       </div>
 
       {status && (
-          <p className={`mb-4 text-sm ${status.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
-            {status}
-          </p>
+        <Alert className={`mb-4 ${status.includes("successfully") ? "border-green-200 bg-green-50 text-green-700" : "border-red-200 bg-red-50 text-red-700"}`}>
+          <AlertDescription>{status}</AlertDescription>
+        </Alert>
       )}
 
-        <form onSubmit={handleSave} className="bg-white shadow-lg rounded-xl p-6 space-y-6">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Edit Profile</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSave} className="space-y-6">
   
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Full Name</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-2">
+              <Label htmlFor="profile-full-name">Full Name</Label>
+              <Input
+                id="profile-full-name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Full name"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Contact No</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-2">
+              <Label htmlFor="profile-contact-no">Contact No</Label>
+              <Input
+                id="profile-contact-no"
                 value={contactNo}
                 onChange={(e) => setContactNo(e.target.value)}
                 placeholder="Contact number"
@@ -190,20 +209,20 @@ export default function EditProfile() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Agency Name</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-2">
+              <Label htmlFor="profile-agency-name">Agency Name</Label>
+              <Input
+                id="profile-agency-name"
                 value={agencyName}
                 onChange={(e) => setAgencyName(e.target.value)}
                 placeholder="Agency name"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Agency Role</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-2">
+              <Label htmlFor="profile-agency-role">Agency Role</Label>
+              <Input
+                id="profile-agency-role"
                 value={agencyRole}
                 onChange={(e) => setAgencyRole(e.target.value)}
                 placeholder="Agency role"
@@ -211,35 +230,38 @@ export default function EditProfile() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">User Role</label>
+          <div className="space-y-2">
+            <Label htmlFor="profile-role">User Role</Label>
             {isManager ? (
-              <select
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select
+                id="profile-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
               >
                 {roles.map((r) => (
                   <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                 ))}
-              </select>
+              </Select>
             ) : (
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-600"
+              <Input
+                id="profile-role"
+                className="bg-gray-100 text-gray-600"
                 value={role || "user"}
                 readOnly
               />
             )}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+            className="w-full"
           >
             {saving ? "Saving..." : "Save Changes"}
-          </button>
+          </Button>
         </form>
+          </CardContent>
+        </Card>
       </div>
   );
 }

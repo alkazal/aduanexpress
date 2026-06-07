@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -231,66 +235,74 @@ export default function Projects() {
         <h1 className="text-2xl font-bold">Projects</h1>
         <p className="text-sm text-gray-500">Manager-only project administration</p>
         {!isOnline && (
-          <p className="text-xs text-orange-600 mt-1">
-            You are offline. Creating, updating, and deleting projects is disabled.
-          </p>
+          <Alert className="mt-2 border-orange-200 bg-orange-50 text-orange-700">
+            <AlertDescription>
+              You are offline. Creating, updating, and deleting projects is disabled.
+            </AlertDescription>
+          </Alert>
         )}
       </div>
 
-      <div className="bg-white border rounded-xl p-5 shadow-sm mb-6">
-        <h2 className="font-semibold mb-3">
-          {editingId ? "Edit Project" : "Create Project"}
-        </h2>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {editingId ? "Edit Project" : "Create Project"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
 
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Project name"
-            className="flex-1 border border-border-light rounded-md px-3 py-2"
+            className="flex-1"
             disabled={saving || !isOnline}
           />
 
-          <button
+          <Button
             type="submit"
             disabled={saving || !isOnline}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-60"
           >
             {saving ? "Saving..." : editingId ? "Update" : "Create"}
-          </button>
+          </Button>
 
           {editingId && (
-            <button
+            <Button
               type="button"
               onClick={cancelEdit}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md"
+              variant="secondary"
             >
               Cancel
-            </button>
+            </Button>
           )}
         </form>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white border rounded-xl p-5 shadow-sm">
+      <Card>
+        <CardContent className="p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <h2 className="font-semibold">All Projects ({filteredProjects.length})</h2>
-          <input
-            type="text"
+          <Input
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
             placeholder="Search project..."
-            className="border border-border-light rounded-md px-3 py-2 text-sm w-full sm:w-72"
+            className="w-full sm:w-72"
           />
         </div>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading projects...</p>
+          <Alert>
+            <AlertDescription>Loading projects...</AlertDescription>
+          </Alert>
         ) : filteredProjects.length === 0 ? (
-          <p className="text-sm text-gray-500">No projects yet.</p>
+          <Alert>
+            <AlertDescription>No projects yet.</AlertDescription>
+          </Alert>
         ) : (
           <div className="space-y-3">
             {pagedProjects.map((project) => (
@@ -304,20 +316,22 @@ export default function Projects() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={() => startEdit(project)}
-                    className="text-blue-600 text-sm underline"
+                    variant="link"
+                    className="h-auto px-0 text-sm"
                     disabled={!isOnline}
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(project)}
-                    className="text-red-600 text-sm underline"
+                    variant="link"
+                    className="h-auto px-0 text-sm text-red-600 hover:text-red-700"
                     disabled={!isOnline}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -327,27 +341,30 @@ export default function Projects() {
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
+                  variant="outline"
+                  size="sm"
                 >
                   Prev
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
+                  variant="outline"
+                  size="sm"
                 >
                   Next
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

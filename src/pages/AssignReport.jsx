@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { syncReports } from "../lib/sync";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Select } from "../components/ui/select";
 
 export default function AssignReport() {
   const [reports, setReports] = useState([]);
@@ -206,7 +211,15 @@ export default function AssignReport() {
 
   }
 
-  if (loading) return <p className="p-6">Loading reports…</p>;
+  if (loading) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto">
+        <Alert>
+          <AlertDescription>Loading reports...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -221,96 +234,81 @@ export default function AssignReport() {
 
 
       {reports.length === 0 && (
-        <p className="text-gray-500">No reports pending assignment</p>
+        <Alert>
+          <AlertDescription>No reports pending assignment</AlertDescription>
+        </Alert>
       )}
 
       <div className="grid gap-5">
         {reports.map((r) => (
-          <div
-            key={r.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="font-semibold text-sm">{r.title || "Untitled Report"}</p>
-                <p className="text-xs text-gray-500">
-                  #{r.ticket_no} • {new Date(r.created_at).toLocaleDateString()}
-                </p>
+          <Card key={r.id} className="shadow-sm hover:shadow-md transition">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <CardTitle className="text-base">{r.title || "Untitled Report"}</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    #{r.ticket_no} | {new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Badge variant="secondary">Submitted</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {r.description}
+              </p>
+
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Project: {r.project_name || "-"}</span>
+                <span>Maintenance Level: {r.maintenance_level || "-"}</span>
+                <span>
+                  By: {r.reporter?.full_name || r.reporter_name || r.user_id}
+                </span>
               </div>
 
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-medium">
-                Submitted
-              </span>
-            </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select
+                  value={selectedLevel[r.id] || ""}
+                  onChange={(e) =>
+                    setSelectedLevel({
+                      ...selectedLevel,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Maintenance Level</option>
+                  <option value="1">Level 1</option>
+                  <option value="2">Level 2</option>
+                  <option value="3">Level 3</option>
+                </Select>
 
-            {/* Description */}
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-              {r.description}
-            </p>
+                <Select
+                  className="flex-1"
+                  value={selectedTech[r.id] || ""}
+                  onChange={(e) =>
+                    setSelectedTech({
+                      ...selectedTech,
+                      [r.id]: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Select Technician</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.full_name}
+                    </option>
+                  ))}
+                </Select>
 
-            {/* Info Row */}
-            <div className="flex justify-between text-xs text-gray-500 mb-3">
-              <span>Project: {r.project_name || "-"}</span>
-              <span>Maintenance Level: {r.maintenance_level || "-"}</span>
-              <span>
-                By: {r.reporter?.full_name || r.reporter_name || r.user_id}
-              </span>
-            </div>
-
-
-            <div className="flex gap-2">
-              {/* Maintenance Level */}
-              <select
-                className="border border-gray-200 rounded-md px-2 py-1 text-sm"
-                value={selectedLevel[r.id] || ""}
-                onChange={(e) =>
-                  setSelectedLevel({
-                    ...selectedLevel,
-                    [r.id]: e.target.value
-                  })
-                }
-              >
-                <option value="">Maintenance Level</option>
-                <option value="1">Level 1</option>
-                <option value="2">Level 2</option>
-                <option value="3">Level 3</option>
-              </select>
-
-              {/* Technician Selection */}
-              <select
-                className="border border-gray-200 rounded-md px-2 py-1 text-sm flex-1"
-                value={selectedTech[r.id] || ""}
-                onChange={(e) =>
-                  setSelectedTech({
-                    ...selectedTech,
-                    [r.id]: e.target.value
-                  })
-                }
-              >
-                <option value="">Select Technician</option>
-                {technicians.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.full_name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Assign Button */}
-              <button
-                onClick={() => handleAssign(r.id)}
-                disabled={!selectedTech[r.id] || !selectedLevel[r.id]}
-                className={`px-4 py-1 rounded-md text-sm font-medium text-white
-                  ${!selectedTech[r.id] || !selectedLevel[r.id]
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-              >
-                Assign
-              </button>
-
-            </div>
-          </div>
+                <Button
+                  onClick={() => handleAssign(r.id)}
+                  disabled={!selectedTech[r.id] || !selectedLevel[r.id]}
+                >
+                  Assign
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

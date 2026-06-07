@@ -4,16 +4,14 @@ import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 //import { syncReports, setSyncStatusListener, setReportSyncedListener } from "../lib/sync";
 import { setSyncStatusListener, setReportSyncedListener } from "../lib/syncEvents";
-
-function statusBadge(status) {
-  if (status === "Open")
-    return "bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold";
-  if (status === "Pending")
-    return "bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold";
-  if (status === "Resolved")
-    return "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold";
-  return "bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs";
-}
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import StatusBadge from "../components/StatusBadge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 
 export default function MySubmissions() {
   const [items, setItems] = useState([]);
@@ -219,8 +217,8 @@ export default function MySubmissions() {
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
 
           <div className="w-full sm:flex-1">
-            <select
-              className="w-full border border-border-light rounded-md p-2 text-sm"
+            <Select
+              className="w-full"
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
@@ -230,33 +228,32 @@ export default function MySubmissions() {
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="w-full sm:flex-1">
-            <input
+            <Input
               type="text"
-              className="w-full border border-border-light rounded-md p-2 text-sm"
               placeholder="Search ticket, title, project, status..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <button
+          <Button
             type="button"
             onClick={clearFilters}
             disabled={!hasActiveFilters}
-            className="h-10 px-3 rounded-md border border-border-light text-sm text-gray-700 bg-white disabled:opacity-50"
+            variant="outline"
+            className="h-10"
           >
             Clear Filters
-          </button>
+          </Button>
 
           <div className="w-full sm:w-auto flex flex-col">
             <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
-            <input
+            <Input
               type="date"
-              className="border border-border-light rounded-md p-2 text-sm"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               aria-label="Start date"
@@ -265,9 +262,8 @@ export default function MySubmissions() {
 
           <div className="w-full sm:w-auto flex flex-col">
             <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
-            <input
+            <Input
               type="date"
-              className="border border-border-light rounded-md p-2 text-sm"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               aria-label="End date"
@@ -277,121 +273,141 @@ export default function MySubmissions() {
       </div>
 
       <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
-        <button
+        <Button
           type="button"
           onClick={() => setSelectedStatus("")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === ""
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+              : ""
           }`}
         >
           All ({baseFilteredItems.length})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Open")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Open"
-              ? "bg-yellow-500 text-white border-yellow-500"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
+              : ""
           }`}
         >
           Open ({openReports})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Pending")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Pending"
-              ? "bg-orange-500 text-white border-orange-500"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
+              : ""
           }`}
         >
           Pending ({pendingReports})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Resolved")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Resolved"
-              ? "bg-green-600 text-white border-green-600"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
+              : ""
           }`}
         >
           Resolved ({resolvedReports})
-        </button>
+        </Button>
       </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       {/* Total */}
-      <div
+      <Card
         onClick={() => setSelectedStatus("")}
-        className={`bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
+        className={`cursor-pointer hover:bg-gray-50 ${
           selectedStatus === "" ? "ring-2 ring-blue-500" : ""
         }`}
       >
-        <p className="text-gray-500 text-sm">Total Reports</p>
-        <p className="text-2xl font-bold">{totalReports}</p>
-      </div>
+        <CardContent className="p-4">
+          <p className="text-gray-500 text-sm">Total Reports</p>
+          <p className="text-2xl font-bold">{totalReports}</p>
+        </CardContent>
+      </Card>
       {/* Open */}
-      <div
+      <Card
         onClick={() => setSelectedStatus("Open")}
-        className={`bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
+        className={`cursor-pointer hover:bg-gray-50 ${
           selectedStatus === "Open" ? "ring-2 ring-yellow-500" : ""
         }`}
       >
-        <p className="text-gray-500 text-sm">Open</p>
-        <p className="text-2xl font-bold text-yellow-600">{openReports}</p>
-      </div>
+        <CardContent className="p-4">
+          <p className="text-gray-500 text-sm">Open</p>
+          <p className="text-2xl font-bold text-yellow-600">{openReports}</p>
+        </CardContent>
+      </Card>
       {/* Pending */}
-      <div
+      <Card
         onClick={() => setSelectedStatus("Pending")}
-        className={`bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
+        className={`cursor-pointer hover:bg-gray-50 ${
           selectedStatus === "Pending" ? "ring-2 ring-orange-500" : ""
         }`}
       >
-        <p className="text-gray-500 text-sm">Pending</p>
-        <p className="text-2xl font-bold text-orange-600">{pendingReports}</p>
-      </div>
+        <CardContent className="p-4">
+          <p className="text-gray-500 text-sm">Pending</p>
+          <p className="text-2xl font-bold text-orange-600">{pendingReports}</p>
+        </CardContent>
+      </Card>
       {/* Resolved */}
-      <div
+      <Card
         onClick={() => setSelectedStatus("Resolved")}
-        className={`bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
+        className={`cursor-pointer hover:bg-gray-50 ${
           selectedStatus === "Resolved" ? "ring-2 ring-green-500" : ""
         }`}
       >
-        <p className="text-gray-500 text-sm">Resolved</p>
-        <p className="text-2xl font-bold text-green-600">{resolvedReports}</p>
-      </div>
+        <CardContent className="p-4">
+          <p className="text-gray-500 text-sm">Resolved</p>
+          <p className="text-2xl font-bold text-green-600">{resolvedReports}</p>
+        </CardContent>
+      </Card>
     </div>
 
       {syncStatus === "syncing" && (
-        <p className="text-blue-600 font-medium mb-2">Syncing offline reports...</p>
+        <Alert className="mb-2 border-blue-200 bg-blue-50 text-blue-700">
+          <AlertDescription>Syncing offline reports...</AlertDescription>
+        </Alert>
       )}
 
-      {loading && <p>Loading...</p>}
+      {loading && (
+        <Alert>
+          <AlertDescription>Loading...</AlertDescription>
+        </Alert>
+      )}
 
       {!loading && filteredItems.length === 0 && (
-        <p className="text-gray-500">You have no report submissions yet.</p>
+        <Alert>
+          <AlertDescription>You have no report submissions yet.</AlertDescription>
+        </Alert>
       )}
 
       {!loading && pagedItems.length > 0 && (
         <div className="mt-4 space-y-3 sm:hidden">
           {pagedItems.map((x) => (
-            <button
+            <Card
               key={x.id}
-              type="button"
               onClick={() => navigate(`/report/${x.id}`)}
-              className="w-full text-left bg-white shadow rounded-xl p-4 border border-gray-100"
+              className="cursor-pointer border border-gray-100"
             >
+              <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500">Ticket #{x.ticket_no}</p>
                   <h3 className="font-semibold text-gray-900 truncate">{x.title}</h3>
                 </div>
-                <span className={statusBadge(x.status)}>{x.status}</span>
+                <StatusBadge status={x.status} />
               </div>
 
               <div className="mt-2 text-xs text-gray-600 space-y-1">
@@ -400,70 +416,69 @@ export default function MySubmissions() {
                 <p>Assigned to: {x.assigned_to || "-"}</p>
                 <p>Created: {new Date(x.created_at).toLocaleDateString()}</p>
               </div>
-            </button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
       <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto hidden sm:block">
 
-        <table className="min-w-[700px] w-full text-sm text-left">
+        <Table className="min-w-[700px] text-left">
 
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="px-4 py-3">Ticket ID</th>
-              <th className="px-4 py-3">Subject</th>
-              <th className="px-4 py-3">Project</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Assigned To</th>
-              <th className="px-4 py-3">Created</th>
-            </tr>
-          </thead>
+          <TableHeader className="bg-gray-50 text-gray-600">
+            <TableRow>
+              <TableHead className="px-4 py-3">Ticket ID</TableHead>
+              <TableHead className="px-4 py-3">Subject</TableHead>
+              <TableHead className="px-4 py-3">Project</TableHead>
+              <TableHead className="px-4 py-3">Status</TableHead>
+              <TableHead className="px-4 py-3">Assigned To</TableHead>
+              <TableHead className="px-4 py-3">Created</TableHead>
+            </TableRow>
+          </TableHeader>
 
-          <tbody>
+          <TableBody>
 
             {pagedItems.map((x) => (
-              <tr
+              <TableRow
                 key={x.id}
                 onClick={() => navigate(`/report/${x.id}`)}
                 className="border-t hover:bg-gray-50 cursor-pointer"
               >
 
-                <td className="px-4 py-3 font-medium">
+                <TableCell className="px-4 py-3 font-medium">
                   #{x.ticket_no}
-                </td>
+                </TableCell>
 
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   <div className="font-semibold">{x.title}</div>
                   <div className="text-gray-500 text-xs">
                     {x.submitted_by}
                   </div>
-                </td>
+                </TableCell>
 
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   {x.project_name || "-"}
-                </td>
+                </TableCell>
 
-                <td className="px-4 py-3">
-                  <span className={statusBadge(x.status)}>
-                    {x.status}
-                  </span>
-                </td>
+                <TableCell className="px-4 py-3">
+                  <StatusBadge status={x.status} />
+                </TableCell>
 
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   {x.assigned_to}
-                </td>
+                </TableCell>
 
-                <td className="px-4 py-3 text-gray-500">
+                <TableCell className="px-4 py-3 text-gray-500">
                   {new Date(x.created_at).toLocaleDateString()}
-                </td>
+                </TableCell>
 
-              </tr>
+              </TableRow>
             ))}
 
-          </tbody>
+          </TableBody>
 
-        </table>
+        </Table>
 
       </div>
 
@@ -473,23 +488,25 @@ export default function MySubmissions() {
             Showing {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, filteredItems.length)} of {filteredItems.length}
           </p>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              variant="outline"
+              size="sm"
             >
               Prev
-            </button>
+            </Button>
             <span className="text-gray-600">Page {safePage} / {totalPages}</span>
-            <button
+            <Button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-50"
+              variant="outline"
+              size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}

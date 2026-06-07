@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Select } from "../components/ui/select";
 
 export default function UserProfile() {
   const { id } = useParams();
@@ -56,9 +62,33 @@ export default function UserProfile() {
     };
   }, [id]);
 
-  if (loading) return <p className="p-6">Loading profile...</p>;
-  if (error) return <p className="p-6 text-red-600">{error}</p>;
-  if (!profile) return <p className="p-6">Profile not found.</p>;
+  if (loading) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>Loading profile...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="p-6">
+        <Alert className="border-red-200 bg-red-50 text-red-700">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+  if (!profile) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertDescription>Profile not found.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -90,12 +120,13 @@ export default function UserProfile() {
     
     <div className="p-6">
       {/*Back button*/}
-      <button
+      <Button
         onClick={() => navigate(-1)}
-        className="text-blue-600 underline mb-6"
+        variant="link"
+        className="mb-6 px-0"
       >
         Back
-      </button>
+      </Button>
 
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
@@ -108,63 +139,65 @@ export default function UserProfile() {
 
       {/*Status message*/}
       {status && (
-        <p 
-        className={`mb-4 text-sm ${
-          status.includes("successfully") ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {status}
-        </p>
+        <Alert className={`mb-4 ${status.includes("successfully") ? "border-green-200 bg-green-50 text-green-700" : "border-red-200 bg-red-50 text-red-700"}`}>
+          <AlertDescription>{status}</AlertDescription>
+        </Alert>
       )}
 
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>User Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
       <form 
       onSubmit={handleSave} 
-      className="bg-white shadow-lg rounded-xl p-6 space-y-6 w-full">
-        <div>
-          <label className="block text-sm font-medium mb-1">Full Name</label>
-          <input
-            className="w-full border border-border-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="space-y-6 w-full">
+        <div className="space-y-2">
+          <Label htmlFor="user-full-name">Full Name</Label>
+          <Input
+            id="user-full-name"
             value={profile.full_name || ""}
             onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            className="w-full border border-border-300 rounded-lg p-3 bg-gray-100 text-gray-600"
+        <div className="space-y-2">
+          <Label htmlFor="user-email">Email</Label>
+          <Input
+            id="user-email"
+            className="bg-gray-100 text-gray-600"
             value={profile.email || "Unavailable"}
             readOnly
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Role</label>
-          <select
-            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="space-y-2">
+          <Label htmlFor="user-role">Role</Label>
+          <Select
+            id="user-role"
             value={profile.role || "user"}
             onChange={(e) => setProfile({ ...profile, role: e.target.value })}
           >
             <option value="user">User</option>
             <option value="manager">Manager</option>
             <option value="technician">Technician</option>
-          </select>
+          </Select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Contact No</label>
-          <input
-            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="space-y-2">
+          <Label htmlFor="user-contact">Contact No</Label>
+          <Input
+            id="user-contact"
             value={profile.contact_no || ""}
             onChange={(e) => setProfile({ ...profile, contact_no: e.target.value })}
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Agency Name</label>
-            <input
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <div className="space-y-2">
+            <Label htmlFor="user-agency-name">Agency Name</Label>
+            <Input
+              id="user-agency-name"
               value={profile.agency_name || ""}
               onChange={(e) =>
                 setProfile({ ...profile, agency_name: e.target.value })
@@ -173,10 +206,10 @@ export default function UserProfile() {
           </div>
         </div>  
 
-        <div>
-            <label className="block text-sm font-medium mb-1">Agency Role</label>
-            <input
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <div className="space-y-2">
+            <Label htmlFor="user-agency-role">Agency Role</Label>
+            <Input
+              id="user-agency-role"
               value={profile.agency_role || ""}
               onChange={(e) =>
                 setProfile({ ...profile, agency_role: e.target.value })
@@ -184,10 +217,11 @@ export default function UserProfile() {
             />
           </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Joined At</label>
-          <input
-            className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-600"
+        <div className="space-y-2">
+          <Label htmlFor="user-joined">Joined At</Label>
+          <Input
+            id="user-joined"
+            className="bg-gray-100 text-gray-600"
             value={
               profile.created_at
                 ? new Date(profile.created_at).toLocaleString()
@@ -197,14 +231,16 @@ export default function UserProfile() {
           />
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+          className="w-full"
         >
           {saving ? "Saving..." : "Save Changes"}
-        </button>
+        </Button>
       </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

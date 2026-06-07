@@ -3,6 +3,11 @@ import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { syncReports } from "../lib/sync";
 import { useNavigate } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { Textarea } from "../components/ui/textarea";
 
 export default function ManagerCloseReport() {
   const [reports, setReports] = useState([]);
@@ -142,7 +147,15 @@ export default function ManagerCloseReport() {
     loadReports();
   }
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <Alert>
+          <AlertDescription>Loading...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -156,77 +169,71 @@ export default function ManagerCloseReport() {
       </div>
 
       {reports.length === 0 && (
-        <p className="text-gray-500">No reports waiting for closure</p>
+        <Alert>
+          <AlertDescription>No reports waiting for closure</AlertDescription>
+        </Alert>
       )}
 
       <div className="space-y-4">
       {reports.map((r) => (
-        <div
-          key={r.id}
-          className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <p className="text-xs text-gray-500">
-                #{r.ticket_no} • {new Date(r.updated_at).toLocaleDateString()}
-              </p>
-              <h2 className="font-semibold text-base">{r.title}</h2>
+        <Card key={r.id} className="shadow-sm hover:shadow-md transition">
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  #{r.ticket_no} | {new Date(r.updated_at).toLocaleDateString()}
+                </p>
+                <CardTitle className="text-base">{r.title}</CardTitle>
+              </div>
+
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+                Resolved
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {r.description}
+            </p>
+
+            <div className="flex justify-between text-xs text-muted-foreground mb-3">
+              <span>
+                Assigned: <b>{r.assigned_to_profile?.full_name || r.assigned_to}</b>
+              </span>
+
+              <span>
+                Reported: <b>{r.created_by_profile?.full_name || r.user_id}</b>
+              </span>
             </div>
 
-            <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-              Resolved
-            </span>
-          </div>
+            <div className="rounded-md border border-border bg-muted/40 p-3">
+              <p className="text-xs font-semibold text-muted-foreground mb-1">
+                Closing Notes
+              </p>
 
-          {/* Description */}
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {r.description}
-          </p>
+              <Textarea
+                rows={2}
+                placeholder="Enter final resolution details..."
+                value={closeNotes[r.id] || ""}
+                onChange={(e) =>
+                  setCloseNotes({
+                    ...closeNotes,
+                    [r.id]: e.target.value
+                  })
+                }
+              />
+            </div>
 
-          {/* Info Row */}
-          <div className="flex justify-between text-xs text-gray-500 mb-3">
-            <span>
-              Assigned:{" "}
-              <b>{r.assigned_to_profile?.full_name || r.assigned_to}</b>
-            </span>
-
-            <span>
-              Reported:{" "}
-              <b>{r.created_by_profile?.full_name || r.user_id}</b>
-            </span>
-          </div>
-
-          {/* Closing Notes */}
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              Closing Notes
-            </label>
-
-            <textarea
-              rows={2}
-              className="w-full border border-gray-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="Enter final resolution details..."
-              value={closeNotes[r.id] || ""}
-              onChange={(e) =>
-                setCloseNotes({
-                  ...closeNotes,
-                  [r.id]: e.target.value
-                })
-              }
-            />
-          </div>
-
-          {/* Action */}
-          <div className="flex justify-end mt-3">
-            <button
-              onClick={() => closeReport(r)}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm"
-            >
-              Close Report
-            </button>
-          </div>
-        </div>
+            <div className="flex justify-end mt-3">
+              <Button
+                onClick={() => closeReport(r)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Close Report
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
     </div>

@@ -4,6 +4,15 @@ import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 import { toReportServerPayload } from "../lib/reportPayload";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Select } from "../components/ui/select";
+import StatusBadge from "../components/StatusBadge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 
 import {
   Inbox,
@@ -238,7 +247,15 @@ export default function TechnicianDashboard() {
     loadReports();
   }
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Alert>
+          <AlertDescription>Loading...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   const projectOptions = Array.from(
     new Set(reports.map((r) => r.project_name).filter(Boolean))
@@ -265,19 +282,6 @@ export default function TechnicianDashboard() {
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
     RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
-
-  function statusColor(status) {
-    if (status === "Open")
-      return "bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full";
-
-    if (status === "Pending")
-      return "bg-orange-100 text-orange-700 px-2 py-1 rounded-full";
-
-    if (status === "Resolved")
-      return "bg-green-100 text-green-700 px-2 py-1 rounded-full";
-
-    return "bg-gray-100 text-gray-700 px-2 py-1 rounded-full";
-  }
 
   async function updateReport(reportId) {
     const newStatus = statusUpdates[reportId];
@@ -361,22 +365,22 @@ export default function TechnicianDashboard() {
       }
 
       // Insert history if needed
-      if (historyEntry) {
-        const { error: historyError } = await supabase
-          .from("report_status_history")
-          .insert({
-            report_id: reportId,
-            old_status: historyEntry.old_status,
-            new_status: historyEntry.new_status,
-            changed_by: historyEntry.changed_by,
-            changed_by_name: historyEntry.changed_by_name,
-            changed_at: historyEntry.changed_at
-          });
+      // if (historyEntry) {
+      //   const { error: historyError } = await supabase
+      //     .from("report_status_history")
+      //     .insert({
+      //       report_id: reportId,
+      //       old_status: historyEntry.old_status,
+      //       new_status: historyEntry.new_status,
+      //       changed_by: historyEntry.changed_by,
+      //       changed_by_name: historyEntry.changed_by_name,
+      //       changed_at: historyEntry.changed_at
+      //     });
 
-        if (historyError) {
-          console.error("History insert failed:", historyError);
-        }
-      }
+      //   if (historyError) {
+      //     console.error("History insert failed:", historyError);
+      //   }
+      // }
 
       await db.reports.update(reportId, {
         synced: true,
@@ -404,8 +408,7 @@ export default function TechnicianDashboard() {
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
           <div className="w-full sm:flex-1">
-            <select
-              className="w-full border border-border-light rounded-md p-2 text-sm"
+            <Select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
             >
@@ -415,16 +418,15 @@ export default function TechnicianDashboard() {
                 {name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>  
 
           <div className="w-full sm:w-auto flex flex-col">
-          <label className="text-xs font-semibold text-gray-700 mb-1">
+          <Label className="text-xs font-semibold text-gray-700 mb-1">
             Start Date
-          </label>
-          <input
+          </Label>
+          <Input
             type="date"
-            className="border border-border-light rounded-md p-2 text-sm"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             aria-label="Start date"
@@ -432,12 +434,11 @@ export default function TechnicianDashboard() {
           </div>
 
           <div className="w-full sm:w-auto flex flex-col">
-          <label className="text-xs font-semibold text-gray-700 mb-1">
+          <Label className="text-xs font-semibold text-gray-700 mb-1">
             End Date
-          </label>
-          <input
+          </Label>
+          <Input
             type="date"
-            className="border border-border-light rounded-md p-2 text-sm"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             aria-label="End date"
@@ -447,57 +448,62 @@ export default function TechnicianDashboard() {
       </div>
 
       <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
-        <button
+        <Button
           type="button"
           onClick={() => setSelectedStatus("")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === ""
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+              : ""
           }`}
         >
           All ({baseFilteredReports.length})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Open")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Open"
-              ? "bg-yellow-500 text-white border-yellow-500"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
+              : ""
           }`}
         >
           Open ({statusCounts.OPEN})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Pending")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Pending"
-              ? "bg-orange-500 text-white border-orange-500"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
+              : ""
           }`}
         >
           Pending ({statusCounts.PENDING})
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setSelectedStatus("Resolved")}
-          className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap border ${
+          variant="outline"
+          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
             selectedStatus === "Resolved"
-              ? "bg-green-600 text-white border-green-600"
-              : "bg-white text-gray-700 border-gray-200"
+              ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
+              : ""
           }`}
         >
           Resolved ({statusCounts.RESOLVED})
-        </button>
+        </Button>
       </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
         {/* Assigned Tickets */}
-        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+        <Card>
+          <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Assigned Tickets</p>
@@ -510,10 +516,12 @@ export default function TechnicianDashboard() {
             <Inbox className="h-6 w-6 text-blue-600" />
           </div>
 
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Open */}
-        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+        <Card>
+          <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Open</p>
@@ -526,10 +534,12 @@ export default function TechnicianDashboard() {
             <Clock className="h-6 w-6 text-purple-600" />
           </div>
 
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Pending */}
-        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+        <Card>
+          <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Pending</p>
@@ -542,10 +552,12 @@ export default function TechnicianDashboard() {
             <AlertCircle className="h-6 w-6 text-red-600" />
           </div>
 
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Resolved */}
-        <div className="bg-white shadow rounded-lg p-4 flex justify-between items-start">
+        <Card>
+          <CardContent className="p-4 flex justify-between items-start">
 
           <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">Resolved</p>
@@ -558,26 +570,28 @@ export default function TechnicianDashboard() {
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
 
-        </div>
+          </CardContent>
+        </Card>
 
       </div>
 
       {filteredReports.length === 0 && (
-        <p className="text-gray-500">No assigned reports</p>
+        <Alert>
+          <AlertDescription>No assigned reports</AlertDescription>
+        </Alert>
       )}
 
       {filteredReports.length > 0 && (
         <div className="mt-4 space-y-3 sm:hidden">
           {filteredReports.map((r) => (
-            <div key={r.id} className="bg-white shadow rounded-xl p-4 border border-gray-100">
+            <Card key={r.id} className="border-gray-100">
+              <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs text-gray-500">Ticket #{r.ticket_no}</p>
                   <h3 className="font-semibold text-gray-900 truncate">{r.title}</h3>
                 </div>
-                <span className={`text-xs whitespace-nowrap ${statusColor(r.status)}`}>
-                  {r.status}
-                </span>
+                <StatusBadge status={r.status} className="text-xs whitespace-nowrap" />
               </div>
 
               <div className="mt-2 text-xs text-gray-600 space-y-1">
@@ -590,8 +604,8 @@ export default function TechnicianDashboard() {
               </p>
 
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <select
-                  className="border border-border-light p-2 rounded text-xs"
+                <Select
+                  className="h-9 text-xs"
                   value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
                   onChange={(e) =>
                     setLevelUpdates({
@@ -604,10 +618,10 @@ export default function TechnicianDashboard() {
                   <option value="1">L1</option>
                   <option value="2">L2</option>
                   <option value="3">L3</option>
-                </select>
+                </Select>
 
-                <select
-                  className="border border-border-light p-2 rounded text-xs"
+                <Select
+                  className="h-9 text-xs"
                   value={statusUpdates[r.id] || ""}
                   onChange={(e) =>
                     setStatusUpdates({
@@ -620,89 +634,84 @@ export default function TechnicianDashboard() {
                   <option value="Open">Open</option>
                   <option value="Pending">Pending</option>
                   <option value="Resolved">Resolved</option>
-                </select>
+                </Select>
               </div>
 
               <div className="mt-3 flex gap-2">
-                <button
+                <Button
                   onClick={() => updateReport(r.id)}
                   disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
-                  className={`flex-1 px-3 py-2 rounded text-xs text-white ${
-                    !statusUpdates[r.id] && !levelUpdates[r.id]
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
+                  className="flex-1 h-9 bg-green-600 hover:bg-green-700 text-xs"
                 >
                   Update
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => navigate(`/report/${r.id}`)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded"
+                  className="flex-1 h-9 text-xs"
                 >
                   View
-                </button>
+                </Button>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
-      <div className="bg-white shadow rounded-lg mt-4 overflow-x-auto hidden sm:block">
+      <Card className="mt-4 overflow-x-auto hidden sm:block">
       <div className="w-full overflow-x-auto">
 
-      <table className="min-w-[900px] w-full text-sm text-left">
+      <Table className="min-w-[900px] text-left">
 
-        <thead className="bg-gray-50 text-gray-600">
-          <tr>
-            <th className="px-4 py-3 whitespace-nowrap">Ticket ID</th>
-            <th className="px-4 py-3 whitespace-nowrap">Subject</th>
-            <th className="px-4 py-3 whitespace-nowrap">Project</th>
-            <th className="px-4 py-3 whitespace-nowrap">Status</th>
-            <th className="px-4 py-3 whitespace-nowrap">Created</th>
-            <th className="px-4 py-3 whitespace-nowrap">Action</th>
-          </tr>
-        </thead>
+        <TableHeader className="bg-gray-50 text-gray-600">
+          <TableRow>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Ticket ID</TableHead>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Subject</TableHead>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Project</TableHead>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Status</TableHead>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Created</TableHead>
+            <TableHead className="px-4 py-3 whitespace-nowrap">Action</TableHead>
+          </TableRow>
+        </TableHeader>
 
-        <tbody>
+        <TableBody>
 
           {filteredReports.map((r) => (
 
-            <tr
+            <TableRow
               key={r.id}
               className="border-t hover:bg-gray-50"
             >
 
-              <td className="px-4 py-3 whitespace-nowrap font-medium">
+              <TableCell className="px-4 py-3 whitespace-nowrap font-medium">
                 #{r.ticket_no}
-              </td>
+              </TableCell>
 
-              <td className="px-4 py-3 whitespace-nowrap">
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 <div className="font-semibold">{r.title}</div>
                 <div className="text-gray-500 text-xs">
                   {r.description?.slice(0,40)}
                 </div>
-              </td>
+              </TableCell>
 
-              <td className="px-4 py-3 whitespace-nowrap">
+              <TableCell className="px-4 py-3 whitespace-nowrap">
                 {r.project_name || "-"}
-              </td>
+              </TableCell>
 
-              <td className="px-4 py-3 whitespace-nowrap">
-              <span className={`text-xs ${statusColor(r.status)}`}>
-                  {r.status}
-                </span>
-              </td>
+              <TableCell className="px-4 py-3 whitespace-nowrap">
+                <StatusBadge status={r.status} className="text-xs" />
+              </TableCell>
 
-              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+              <TableCell className="px-4 py-3 text-gray-500 whitespace-nowrap">
                 {new Date(r.created_at).toLocaleDateString()}
-              </td>
+              </TableCell>
 
-              <td className="px-4 py-3 flex whitespace-nowrap gap-2 items-center">
+              <TableCell className="px-4 py-3 flex whitespace-nowrap gap-2 items-center">
   
                 {/* LEVEL */}
-                <select
-                  className="border border-border-light p-1 rounded text-xs"
+                <Select
+                  className="h-8 text-xs"
                   value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
                   onChange={(e) =>
                     setLevelUpdates({
@@ -715,10 +724,10 @@ export default function TechnicianDashboard() {
                   <option value="1">L1</option>
                   <option value="2">L2</option>
                   <option value="3">L3</option>
-                </select>
+                </Select>
 
-                <select
-                  className="border border-border-light p-1 rounded text-sm"
+                <Select
+                  className="h-8 text-sm"
                   value={statusUpdates[r.id] || ""}
                   onChange={(e) =>
                     setStatusUpdates({
@@ -731,40 +740,36 @@ export default function TechnicianDashboard() {
                   <option value="Open">Open</option>
                   <option value="Pending">Pending</option>
                   <option value="Resolved">Resolved</option>
-                </select>
+                </Select>
 
-                <button
+                <Button
                   onClick={() => updateReport(r.id)}
                   disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
-                  className={`px-2 py-1 rounded text-xs text-white
-                    ${!statusUpdates[r.id] && !levelUpdates[r.id]
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700"
-                    }`}
+                  className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
                 >
                   Update
-                </button>
+                </Button>
 
-                <button
+                <Button
                   onClick={() => navigate(`/report/${r.id}`)}
-                  className="bg-blue-600 text-white text-xs px-3 py-1 rounded"
+                  className="h-8 text-xs px-3 py-1"
                 >
                   View
-                </button>
+                </Button>
 
-              </td>
+              </TableCell>
 
-            </tr>
+            </TableRow>
 
           ))}
 
-        </tbody>
+        </TableBody>
 
-      </table>
-
-    </div>
+      </Table>
 
     </div>
+
+    </Card>
 
     </div>
   );

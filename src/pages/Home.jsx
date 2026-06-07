@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
+import { Button } from "../components/ui/button";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 //import { startNotificationListener } from "../lib/notificationListener";
 
@@ -184,7 +185,8 @@ export default function Home() {
     { NEW: 0, OPEN: 0, PENDING: 0, RESOLVED: 0, CLOSED: 0 }
   );
 
-  const reportTypes = ["Attendance", "Incident", "Maintenance"];
+  // const reportTypes = ["Attendance", "Incident", "Maintenance"];
+  const reportTypes = ["Application","Incident", "Maintenance"];
   const chartData = reportTypes.map(type => ({
     type,
     online: filteredReports.filter(r => r.report_type === type && r.synced).length,
@@ -216,7 +218,7 @@ const projectChartData = Object.values(
 );
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold mb-6">
         Welcome, {user?.email ?? "User"}!
       </h1>
@@ -421,12 +423,12 @@ const projectChartData = Object.values(
         )}
       </div>
 
-      <button
+      <Button
         onClick={() => navigate("/new-report")}
-        className="mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+        className="mt-6"
       >
         Submit New Report
-      </button>
+      </Button>
 
       <Toast
         message={toastMessage}

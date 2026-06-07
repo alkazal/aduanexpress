@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -50,49 +55,48 @@ export default function ResetPassword() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <Alert className="w-full max-w-sm">
+          <AlertDescription>Loading...</AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-400 to-white px-4 py-8">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-
-        {/* Logo and Title */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg font-semibold">AE</span>
+      <Card className="w-full max-w-md border-0 shadow-xl">
+        <CardHeader>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-lg font-semibold">AE</span>
+            </div>
           </div>
-        </div>
+          <CardTitle className="text-center">Reset Password</CardTitle>
+        </CardHeader>
 
-        <h1 className="text-2xl font-bold text-center mb-6">Reset Password</h1>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              placeholder="Enter new password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        {/* New password */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
-            New Password
-          </label>
-          <input
-            type="password"
-            className="w-full p-2 border border-border-light rounded-md"
-            placeholder="Enter new password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+          <Button onClick={handleUpdatePassword} className="w-full">
+            Update Password
+          </Button>
 
-        <button
-          onClick={handleUpdatePassword}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium"
-        >
-          Update Password
-        </button>
-
-        {status && (
-          <p className="text-center mt-4 text-gray-700">{status}</p>
-        )}
-      </div>
+          {status && (
+            <Alert>
+              <AlertDescription>{status}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

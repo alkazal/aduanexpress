@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export default defineConfig(async ({ command }) => {
   const useHttps = process.env.HTTPS === 'true'
@@ -14,6 +19,11 @@ export default defineConfig(async ({ command }) => {
   }
 
   return {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src')
+      }
+    },
     server: {
       https: httpsConfig,
       host: '0.0.0.0'
@@ -52,17 +62,17 @@ export default defineConfig(async ({ command }) => {
           start_url: '/',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'AE-192x192.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'AE-512x512.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'AE-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

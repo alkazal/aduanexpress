@@ -4,6 +4,14 @@ import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 import { compressImage } from "../utils/imageCompressor";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { Select } from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
 
 export default function NewReport() {
   const navigate = useNavigate();
@@ -155,159 +163,163 @@ return (
     <div className="p-6 w-full min-h-screen bg-gray-100">
       <div className="max-w-4xl w-full mx-auto">
         <div className="mb-6">
-          <button
+          <Button
             onClick={() => navigate(-1)}
-            className="text-blue-600 underline mb-2"
+            variant="link"
+            className="mb-2 h-auto px-0"
           >
             Back
-          </button>
+          </Button>
           <h1 className="text-2xl font-bold">New Report</h1>
           <p className="text-gray-500 text-sm">Fill out the details below</p>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>
+          <Alert className="mb-4 border-red-200 bg-red-50 text-red-700">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-xl p-6 space-y-6">
-          {/* Report Type & Project */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-medium mb-1">Report Type</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-              >
-                <option value="">Select a type</option>
-                <option value="Attendance">Attendance</option>
-                <option value="Incident">Incident</option>
-                <option value="Maintenance">Maintenance</option>
-              </select>
-            </div>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Report Information</CardTitle>
+            <CardDescription>Complete all required fields before submitting.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="report-type">Report Type</Label>
+                  <Select
+                    id="report-type"
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                  >
+                    <option value="">Select a type</option>
+                    <option value="Application">Application</option>
+                    <option value="Incident">Incident</option>
+                    <option value="Maintenance">Maintenance</option>
+                  </Select>
+                </div>
 
-            <div>
-              <label className="block font-medium mb-1">Project</label>
-              <select
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                required
-              >
-                <option value="">Select a project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              {projects.length === 0 && (
-                <p className="text-sm text-gray-500 mt-1">No projects available.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Title & Description */}
-          <div>
-            <label className="block font-medium mb-1">Title</label>
-            <input
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Description</label>
-            <textarea
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="4"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-medium mb-1">Requestor Name</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={requestorName}
-                onChange={(e) => setRequestorName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium mb-1">Requestor Phone No</label>
-              <input
-                type="tel"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={requestorPhoneNo}
-                onChange={(e) => setRequestorPhoneNo(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-medium mb-1">Datetime Request</label>
-            <input
-              type="datetime-local"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={requestDatetime}
-              onChange={(e) => setRequestDatetime(e.target.value)}
-              required
-            />
-          </div>
-
-          {/* Attachments */}
-          <div>
-            <label className="block font-medium mb-1">Attachments</label>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="block mt-2"
-            />
-
-            {compressing && (
-              <div className="space-y-2 mt-4">
-                {Object.entries(progressMap).map(([name, progress]) => (
-                  <div key={name}>
-                    <p className="text-sm font-medium mb-1">{name}</p>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className="bg-blue-600 h-3 rounded-full transition-all duration-200"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  <Label htmlFor="project">Project</Label>
+                  <Select
+                    id="project"
+                    value={projectId}
+                    onChange={(e) => setProjectId(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </Select>
+                  {projects.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No projects available.</p>
+                  )}
+                </div>
               </div>
-            )}
 
-            {attachments.length > 0 && (
-              <ul className="mt-3 bg-gray-100 p-2 rounded">
-                {attachments.map((file, idx) => (
-                  <li key={idx} className="text-sm text-gray-700">
-                    📎 {file.name} ({Math.round(file.size / 1024)} KB)
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
-          >
-            Submit Report
-          </button>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  rows="4"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="requestor-name">Requestor Name</Label>
+                  <Input
+                    id="requestor-name"
+                    value={requestorName}
+                    onChange={(e) => setRequestorName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="requestor-phone">Requestor Phone No</Label>
+                  <Input
+                    id="requestor-phone"
+                    type="tel"
+                    value={requestorPhoneNo}
+                    onChange={(e) => setRequestorPhoneNo(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="request-datetime">Datetime Request</Label>
+                <Input
+                  id="request-datetime"
+                  type="datetime-local"
+                  value={requestDatetime}
+                  onChange={(e) => setRequestDatetime(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attachments">Attachments</Label>
+                <Input
+                  id="attachments"
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="h-auto py-2"
+                />
+
+                {compressing && (
+                  <div className="space-y-2 mt-4">
+                    {Object.entries(progressMap).map(([name, progress]) => (
+                      <div key={name}>
+                        <p className="text-sm font-medium mb-1">{name}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className="bg-blue-600 h-3 rounded-full transition-all duration-200"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {attachments.length > 0 && (
+                  <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                    {attachments.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="truncate">{file.name}</span>
+                        <Badge variant="secondary">{Math.round(file.size / 1024)} KB</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full">
+                Submit Report
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { setSyncStatusListener } from "../lib/syncEvents";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Badge } from "./ui/badge";
+import { cn } from "../lib/utils";
 
 export default function SyncStatus() {
   const [status, setStatus] = useState("idle");
@@ -13,21 +16,63 @@ export default function SyncStatus() {
 
   if (status === "idle") return null;
 
+  const statusConfig = {
+    syncing: {
+      label: "Syncing",
+      message: "Syncing data now...",
+      tone: "bg-blue-600",
+      badge: "default",
+      icon: "SYNC",
+    },
+    done: {
+      label: "Synced",
+      message: "All data synced",
+      tone: "bg-green-600",
+      badge: "secondary",
+      icon: "OK",
+    },
+    nosession: {
+      label: "Action Needed",
+      message: "Login required to sync",
+      tone: "bg-amber-500",
+      badge: "outline",
+      icon: "WARN",
+    },
+    offline: {
+      label: "Offline",
+      message: "Offline mode, waiting to sync",
+      tone: "bg-gray-500",
+      badge: "secondary",
+      icon: "OFF",
+    },
+  };
+
+  const current = statusConfig[status] ?? {
+    label: "Sync",
+    message: "Status unavailable",
+    tone: "bg-gray-500",
+    badge: "secondary",
+    icon: "INFO",
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 px-4 py-2 text-white rounded shadow-lg text-sm 
-      transition-all duration-300"
-      style={{
-        background:
-          status === "syncing" ? "#2563eb" :
-          status === "done" ? "#16a34a" :
-          status === "nosession" ? "#f59e0b" :
-          "#6b7280"
-      }}
+    <Alert
+      className={cn(
+        "fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))] border-0 text-white shadow-lg transition-all duration-300",
+        current.tone
+      )}
+      aria-live="polite"
     >
-      {status === "syncing" && "🔄 Syncing..."}
-      {status === "done" && "✅ All data synced"}
-      {status === "nosession" && "⚠️ Login required to sync"}
-      {status === "offline" && "📴 Offline mode — waiting to sync"}
-    </div>
+      <div className="mb-1 flex items-center gap-2">
+        <span aria-hidden="true" className="text-[10px] font-bold tracking-wide">
+          {current.icon}
+        </span>
+        <AlertTitle className="mb-0 text-sm text-white">{current.label}</AlertTitle>
+        <Badge variant={current.badge} className="ml-auto bg-white/20 text-white hover:bg-white/20">
+          {status}
+        </Badge>
+      </div>
+      <AlertDescription className="text-white/90">{current.message}</AlertDescription>
+    </Alert>
   );
 }

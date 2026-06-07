@@ -9,6 +9,10 @@ import ArrowRightIcon from "@heroicons/react/24/outline/ArrowRightIcon";
 import UserCircleIcon from "@heroicons/react/24/outline/UserCircleIcon";
 import WrenchScrewdriverIcon from "@heroicons/react/24/outline/WrenchScrewdriverIcon";
 import UsersIcon from "@heroicons/react/24/outline/UsersIcon";
+import { Button, buttonVariants } from "./ui/button";
+import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
+import { cn } from "../lib/utils";
 
 export default function Navigation() {
   const [role, setRole] = useState(null);
@@ -72,80 +76,92 @@ export default function Navigation() {
     }
   };
 
-  const linkClass = ({ isActive }) =>
-  `px-3 py-2 rounded-lg transition ${
-    isActive
-      ? "bg-blue-100 text-blue-600 font-semibold"
-      : "text-gray-600 hover:bg-gray-100"
-  }`;
+  const desktopLinkClass = ({ isActive }) =>
+    cn(
+      buttonVariants({ variant: isActive ? "secondary" : "ghost", size: "sm" }),
+      "h-auto justify-start px-3 py-2 text-left text-sm"
+    );
 
   const mobileLinkClass = ({ isActive }) =>
-  `flex flex-col items-center transition ${
-    isActive ? "text-blue-600" : "text-gray-600"
-  }`;
+    cn(
+      buttonVariants({ variant: "ghost", size: "icon" }),
+      "h-auto w-auto flex-col rounded-md px-2 py-1.5 text-[11px] leading-tight",
+      isActive ? "text-blue-600" : "text-gray-600"
+    );
 
   return (
     <>
     {/* SIDEBAR NAV (Desktop) */}
-    <nav className="hidden md:flex flex-col w-64 h-screen bg-white shadow-lg fixed left-0 top-0 z-50">
+    <nav className="fixed left-0 top-0 z-50 hidden h-screen w-64 flex-col border-r border-gray-200 bg-white shadow-lg md:flex">
 
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-6 border-b">
+      <div className="flex items-center gap-3 px-6 py-6">
         <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
           <span className="text-white text-lg font-semibold">AE</span>
         </div>
-        <span className="text-xl font-bold text-gray-800">AduanExpress</span>
+        <div className="flex flex-col">
+          <span className="text-xl font-bold text-gray-800">AduanExpress</span>
+          {role && (
+            <Badge variant="secondary" className="mt-1 w-fit capitalize">
+              {role}
+            </Badge>
+          )}
+        </div>
       </div>
 
+      <Separator />
+
       {/* Navigation Links */}
-      <div className="flex flex-col gap-4 px-6 py-6 text-lg">
+      <div className="flex flex-col gap-2 px-4 py-4">
 
-        <NavLink to="/" className={linkClass}>Dashboard</NavLink>
+        <NavLink to="/" className={desktopLinkClass}>Dashboard</NavLink>
 
-        <NavLink to="/submissions" className={linkClass}>Reports</NavLink>
+        <NavLink to="/submissions" className={desktopLinkClass}>Reports</NavLink>
 
         {role === "manager" && (
-          <NavLink to="/assign" className={linkClass}>Assign Reports</NavLink>
+          <NavLink to="/assign" className={desktopLinkClass}>Assign Reports</NavLink>
         )}
 
         {role === "manager" && (
-          <NavLink to="/close-report" className={linkClass}>Close Reports</NavLink>
+          <NavLink to="/close-report" className={desktopLinkClass}>Close Reports</NavLink>
         )}
 
         {role === "manager" && (
-          <NavLink to="/users" className={linkClass}>Users</NavLink>
+          <NavLink to="/users" className={desktopLinkClass}>Users</NavLink>
         )}
 
         {role === "manager" && (
-          <NavLink to="/projects" className={linkClass}>Projects</NavLink>
+          <NavLink to="/projects" className={desktopLinkClass}>Projects</NavLink>
         )}
 
         {role === "technician" && (
-          <NavLink to="/technician" className={linkClass}>Technician Board</NavLink>
+          <NavLink to="/technician" className={desktopLinkClass}>Technician Board</NavLink>
         )}
 
-        <NavLink to="/profile" className={linkClass}>Profile</NavLink>
+        <NavLink to="/profile" className={desktopLinkClass}>Profile</NavLink>
 
-        <NavLink to="/new-report" className={linkClass}>New Report</NavLink>
+        <NavLink to="/new-report" className={desktopLinkClass}>New Report</NavLink>
 
       </div>
 
       {/* Logout bottom */}
-      <div className="mt-auto px-6 py-6 border-t">
-        <button
+      <div className="mt-auto px-4 py-4">
+        <Separator className="mb-4" />
+        <Button
           onClick={handleLogout}
-          className="text-red-600 hover:text-red-700 font-medium flex items-center gap-2"
+          variant="ghost"
+          className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
         >
           <ArrowRightIcon className="w-5 h-5" />
           Logout
-        </button>
+        </Button>
       </div>
 
     </nav>
 
       {/* BOTTOM TAB NAV (Mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-inner border-t border-border-light z-50">
-        <div className="flex justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-inner md:hidden">
+        <div className="flex justify-around px-1 py-2">
           <NavLink to="/" className={mobileLinkClass}>
             <HomeIcon className="w-6 h-6" />
             <span className="text-xs">Home</span>
@@ -194,10 +210,14 @@ export default function Navigation() {
             <span className="text-xs">New</span>
           </NavLink>
 
-          <button onClick={handleLogout} className="flex flex-col items-center text-red-600">
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            className="h-auto w-auto flex-col px-2 py-1.5 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
             <ArrowRightIcon  className="w-6 h-6" />
             <span className="text-xs">Logout</span>
-          </button>
+          </Button>
 
         </div>
       </nav>

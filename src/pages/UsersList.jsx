@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 
 export default function UsersList() {
   const navigate = useNavigate();
@@ -85,20 +91,20 @@ const roleOptions = ["manager", "technician", "user"];
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
 
         {/* Search */}
-        <input
+        <Input
           type="text"
           placeholder="Search by name or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full sm:w-72 border rounded-lg px-5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full sm:w-72"
         />
 
         {/* Role Filter */}
         <div className="relative">
-          <select
+          <Select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="border border-gray-300 rounded px-5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            className="cursor-pointer"
           >
             <option value="all">All Roles</option>
 
@@ -107,7 +113,7 @@ const roleOptions = ["manager", "technician", "user"];
                 {role.charAt(0).toUpperCase() + role.slice(1)}
               </option>
             ))}
-          </select>
+          </Select>
 
         </div>
       </div>  
@@ -116,37 +122,47 @@ const roleOptions = ["manager", "technician", "user"];
         {filteredUsers.length} users
       </p>
 
-      {loading && <p>Loading users...</p>}
-      {error && <p className="text-red-600">{error}</p>}
-
-      {!loading && !error && users.length === 0 && (
-        <p className="text-gray-500">No users found.</p>
+      {loading && (
+        <Alert>
+          <AlertDescription>Loading users...</AlertDescription>
+        </Alert>
+      )}
+      {error && (
+        <Alert className="border-red-200 bg-red-50 text-red-700">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      <div className="overflow-x-auto bg-white border rounded-xl shadow-sm">
-        <table className="min-w-full text-sm">
+      {!loading && !error && users.length === 0 && (
+        <Alert>
+          <AlertDescription>No users found.</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="overflow-x-auto">
+        <Table className="min-w-full">
           
           {/* Table Head */}
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">User</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">Email</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">Role</th>
-              <th className="text-left px-6 py-3 font-semibold text-gray-600">Joined</th>
-            </tr>
-          </thead>
+          <TableHeader className="bg-gray-50 border-b">
+            <TableRow>
+              <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">User</TableHead>
+              <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Email</TableHead>
+              <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Role</TableHead>
+              <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Joined</TableHead>
+            </TableRow>
+          </TableHeader>
 
           {/* Table Body */}
-          <tbody className="divide-y">
+          <TableBody className="divide-y">
             {filteredUsers.map((u) => (
-              <tr
+              <TableRow
                 key={u.id}
                 onClick={() => navigate(`/users/${u.id}`)}
                 className="cursor-pointer hover:bg-gray-50 transition"
               >
                 
                 {/* Name + Avatar */}
-                <td className="px-6 py-4 flex items-center gap-3">
+                <TableCell className="px-6 py-4 flex items-center gap-3">
                   <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
                     <span className="text-blue-600 font-semibold text-xs">
                       {(u.full_name || "U")
@@ -159,17 +175,18 @@ const roleOptions = ["manager", "technician", "user"];
                   <span className="font-medium text-gray-900">
                     {u.full_name || "Unnamed User"}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Email */}
-                <td className="px-6 py-4 text-gray-600">
+                <TableCell className="px-6 py-4 text-gray-600">
                   {u.email || "No email"}
-                </td>
+                </TableCell>
 
                 {/* Role Badge */}
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-block px-3 py-1 text-xs rounded-full ${
+                <TableCell className="px-6 py-4">
+                  <Badge
+                    variant="secondary"
+                    className={`inline-block px-3 py-1 text-xs rounded-full hover:bg-transparent ${
                       u.role === "admin"
                         ? "bg-purple-100 text-purple-700"
                         : u.role === "technician"
@@ -178,19 +195,19 @@ const roleOptions = ["manager", "technician", "user"];
                     }`}
                   >
                     {u.role || "user"}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Joined Date */}
-                <td className="px-6 py-4 text-gray-500">
+                <TableCell className="px-6 py-4 text-gray-500">
                   {new Date(u.created_at).toLocaleDateString()}
-                </td>
+                </TableCell>
 
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
     </div>
   );

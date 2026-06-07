@@ -3,22 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
 import { deleteReport } from "../utils/deleteReport";
-
-// For image modal
-function Modal({ url, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <img
-        src={url}
-        className="max-h-[90vh] max-w-[90vw] rounded shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>
-  );
-}
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Textarea } from "../components/ui/textarea";
 
 export default function ReportDetails() {
   const { id } = useParams();
@@ -27,7 +16,6 @@ export default function ReportDetails() {
   const [report, setReport] = useState(null);
   const [attachments, setAttachments] = useState([]);
 
-  const [modalUrl, setModalUrl] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -39,7 +27,6 @@ export default function ReportDetails() {
 
   const [userRole, setUserRole] = useState(null);
   const isStaff = userRole === "manager" || userRole === "technician";
-  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     async function getUserRole() {
@@ -47,13 +34,11 @@ export default function ReportDetails() {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
           console.error("Error fetching user:", error);
-          setRoleLoading(false);
           return;
         }
 
         const user = data?.user;
         if (!user) {
-          setRoleLoading(false);
           return;
         }
 
@@ -70,8 +55,6 @@ export default function ReportDetails() {
         }
       } catch (err) {
         console.error("Unexpected error getting user role:", err);
-      } finally {
-        setRoleLoading(false);
       }
     }
 
@@ -200,9 +183,23 @@ export default function ReportDetails() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Alert>
+          <AlertDescription>Loading...</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   if (!report)
-    return <p className="p-6 text-red-500">Report not found</p>;
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Alert className="border-red-200 bg-red-50 text-red-700">
+          <AlertDescription>Report not found</AlertDescription>
+        </Alert>
+      </div>
+    );
 
   // ----------------------------------------------------
   // BUILD STATUS TIMELINE (NEW CLEAN VERSION)
@@ -317,14 +314,16 @@ export default function ReportDetails() {
     <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
 
-      <button
+      <Button
         onClick={() => navigate(-1)}
-        className="text-blue-600 underline mb-4"
+        variant="link"
+        className="mb-4 px-0"
       >
         ← Back
-      </button>
+      </Button>
 
-      <div className="bg-white border rounded-xl p-6 shadow-sm">
+      <Card>
+        <CardContent className="p-6">
         <h1 className="text-2xl font-bold mb-2">
           #{report.ticket_no}
         </h1>
@@ -335,27 +334,30 @@ export default function ReportDetails() {
 
         <div className="flex gap-2 mt-2 flex-wrap">
 
-        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">
+        <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-100">
           {report.status}
-        </span>
+        </Badge>
 
         {report.maintenance_level && (
-          <span
-            className={`px-3 py-1 text-xs rounded-full font-semibold flex items-center gap-1
+          <Badge
+            variant="secondary"
+            className={`px-3 py-1 text-xs rounded-full font-semibold flex items-center gap-1 hover:bg-transparent
               ${report.maintenance_level === 1 && "bg-green-100 text-green-700"}
               ${report.maintenance_level === 2 && "bg-yellow-100 text-yellow-700"}
               ${report.maintenance_level === 3 && "bg-red-100 text-red-700"}
             `}
           >
             Maintenance L{report.maintenance_level}
-          </span>
+          </Badge>
         )}
 
       </div>
 
-      </div>
+      </CardContent>
+      </Card>
 
-            <div className="bg-white border rounded-xl p-6 shadow-sm mt-4">
+            <Card className="mt-4">
+              <CardContent className="p-6">
         <h2 className="font-semibold mb-2">Description</h2>
 
         <p className="text-gray-700">
@@ -407,12 +409,14 @@ export default function ReportDetails() {
           </div>
 
       </div>
-    </div>
+    </CardContent>
+    </Card>
 
       {/* ----------------------------------------------------
           ATTACHMENTS
       ---------------------------------------------------- */}
-      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+      <Card className="mt-6">
+        <CardContent className="p-6">
 
       <h2 className="text-xl font-semibold mb-4">
         Attachments ({attachments.length})
@@ -492,7 +496,7 @@ export default function ReportDetails() {
 
                 {/* Actions */}
                 <div className="flex gap-2 mt-2">
-                  <button
+                  <Button
                     onClick={() =>
                       setPreviewFile({
                         url: fileUrl,
@@ -500,10 +504,11 @@ export default function ReportDetails() {
                         type: att.mime_type,
                       })
                     }
-                    className="text-blue-600 text-xs underline"
+                    variant="link"
+                    className="h-auto px-0 text-xs"
                   >
                     View
-                  </button>
+                  </Button>
 
                   <a
                     href={fileUrl}
@@ -517,52 +522,55 @@ export default function ReportDetails() {
             );
         })}
       </div>
-      </div>
+      </CardContent>
+      </Card>
 
-      <div className="bg-white border rounded-xl p-6 shadow-sm mt-6">
+      <Card className="mt-6">
+      <CardContent className="p-6">
 
       <h2 className="text-lg font-semibold mb-4">Communication</h2>
 
       {/* Tabs */}
       <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
-        <button
+        <Button
           onClick={() => setActiveTab("public")}
+          variant={activeTab === "public" ? "secondary" : "ghost"}
           className={`flex-1 py-2 text-sm rounded ${
             activeTab === "public" ? "bg-white shadow" : ""
           }`}
         >
           Public Reply
-        </button>
+        </Button>
 
         {isStaff && (
-          <button
+          <Button
             onClick={() => setActiveTab("internal")}
+            variant={activeTab === "internal" ? "secondary" : "ghost"}
             className={`flex-1 py-2 text-sm rounded ${
               activeTab === "internal" ? "bg-white shadow" : ""
             }`}
           >
             Internal Notes
-          </button>
+          </Button>
         )}
       </div>
 
       {/* PUBLIC REPLY */}
       {activeTab === "public" && (
         <>
-          <textarea
+          <Textarea
             value={publicReply}
             onChange={(e) => setPublicReply(e.target.value)}
             placeholder="Type your response to the user..."
-            className="w-full border rounded-lg p-3 text-sm"
             rows={4}
           />
 
-          <button
+          <Button
             onClick={sendPublicReply}
-            className="mt-3 bg-black text-white px-4 py-2 rounded"
+            className="mt-3"
           >
             Send Response
-          </button>
+          </Button>
 
           {/* Display Previous Public Replies */}
           <div className="mt-6 space-y-3">
@@ -591,20 +599,20 @@ export default function ReportDetails() {
       {/* INTERNAL NOTES */}
       {activeTab === "internal" && (
         <>
-          <textarea
+          <Textarea
             value={internalNote}
             onChange={(e) => setInternalNote(e.target.value)}
             placeholder="Add internal troubleshooting notes..."
-            className="w-full border rounded-lg p-3 text-sm"
             rows={4}
           />
 
-          <button
+          <Button
             onClick={sendInternalNote}
-            className="mt-3 bg-gray-800 text-white px-4 py-2 rounded"
+            variant="secondary"
+            className="mt-3"
           >
             Add Internal Note
-          </button>
+          </Button>
 
           {/* Display Previous Internal Notes */}
           <div className="mt-6 space-y-3">
@@ -630,17 +638,19 @@ export default function ReportDetails() {
         </>
       )}
 
-      </div>
+      </CardContent>
+      </Card>
 
        {/* EDIT BUTTON */}
-      <button
-        className="mt-6 w-full bg-blue-600 text-white py-2 rounded"
+      <Button
+        className="mt-6 w-full"
         onClick={() => navigate(`/report/${id}/edit`)}
       >
         Edit Report
-      </button>
-      <button
-        className="mt-6 w-full bg-red-600 text-white py-2 rounded"
+      </Button>
+      <Button
+        variant="destructive"
+        className="mt-6 w-full"
         onClick={async () => {
           if (confirm("Delete this report?")) {
             await deleteReport(report);
@@ -649,7 +659,7 @@ export default function ReportDetails() {
         }}        
       >
         Delete
-      </button>
+      </Button>
 
       {/* Delete Button */}
       {/* <button
@@ -670,12 +680,14 @@ export default function ReportDetails() {
           <div className="bg-white w-full max-w-3xl rounded-lg p-4 relative">
             
             {/* Close button */}
-            <button
+            <Button
               onClick={() => setPreviewFile(null)}
-              className="absolute top-2 right-3 text-gray-500 hover:text-black text-lg"
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-3"
             >
               ✕
-            </button>
+            </Button>
 
             {/* File name */}
             <p className="text-sm mb-3 font-semibold truncate">
@@ -700,7 +712,7 @@ export default function ReportDetails() {
                 <a
                   href={previewFile.url}
                   download
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
                 >
                   Download
                 </a>
@@ -712,16 +724,16 @@ export default function ReportDetails() {
               <a
                 href={previewFile.url}
                 download
-                className="bg-green-600 text-white px-4 py-2 rounded"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white"
               >
                 Download
               </a>
-              <button
+              <Button
                 onClick={() => setPreviewFile(null)}
-                className="bg-gray-300 px-4 py-2 rounded"
+                variant="secondary"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -731,11 +743,11 @@ export default function ReportDetails() {
       {/* ----------------------------------------------------
           STATUS TIMELINE
       ---------------------------------------------------- */}
-      <div className="bg-white border rounded-xl p-6 shadow-sm">
-
-      <h2 className="text-lg font-semibold mb-4">
-        Activity Timeline
-      </h2>
+      <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Activity Timeline</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 pt-0">
 
       <div className="relative border-l-2 border-blue-500 pl-6 space-y-10">
 
@@ -765,7 +777,8 @@ export default function ReportDetails() {
         ))}
 
       </div>
-     </div> 
+      </CardContent>
+         </Card> 
 
       
     </div>
