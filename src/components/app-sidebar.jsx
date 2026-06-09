@@ -11,6 +11,7 @@ import {
   Wrench,
 } from "lucide-react"
 
+
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -26,7 +27,7 @@ function buildNav(role) {
   const nav = [
     { title: "Dashboard", url: "/", icon: Home },
     { title: "My Reports", url: "/submissions", icon: FileText },
-    { title: "New Report", url: "/new-report", icon: PlusCircle },
+    // { title: "New Report", url: "/new-report", icon: PlusCircle },
   ]
 
   if (role === "manager") {
@@ -42,7 +43,7 @@ function buildNav(role) {
     nav.push({ title: "Technician Board", url: "/technician", icon: Wrench })
   }
 
-  nav.push({ title: "Profile", url: "/profile", icon: UserCircle })
+  //nav.push({ title: "Profile", url: "/profile", icon: UserCircle })
 
   return nav
 }
@@ -82,11 +83,11 @@ export function AppSidebar(props) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-0 py-2">
+        <div className="flex items-center gap-2 px-0 py-4">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
             AE
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+          <div className="grid flex-1 text-left text-lg leading-tight group-data-[collapsible=icon]:hidden">
             <span className="truncate font-semibold">AduanExpress</span>
             {role && <span className="truncate text-xs text-muted-foreground capitalize">{role}</span>}
           </div>

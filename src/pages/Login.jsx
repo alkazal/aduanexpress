@@ -304,9 +304,9 @@ export default function Login() {
               <form className="p-6 md:p-10" onSubmit={handleLogin}>
                 <FieldGroup className="gap-5">
                   <div className="flex flex-col items-center gap-2 text-center md:items-start md:text-left">
-                    <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">Welcome to AduanExpress</h1>
                     <p className="text-pretty text-muted-foreground">
-                      Login to your AduanExpress account
+                      Login to your AE account
                     </p>
                   </div>
                   <Field>
@@ -402,7 +402,7 @@ export default function Login() {
                 <div className="relative z-10 flex h-full flex-col justify-end p-10 text-white">
                   <p className="text-lg font-semibold">AduanExpress</p>
                   <p className="mt-2 text-sm leading-relaxed text-white/90">
-                    A platform that enables you to connect with us to manage and respond to reports or complaints in a systematic and efficient manner.
+                    Connect with us to seamlessly manage, track, and resolve your complaints with absolute efficiency.
                   </p>
                 </div>
               </div>

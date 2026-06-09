@@ -1,25 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-
-import Home from "./pages/Home";
-import NewReport from "./pages/NewReport";
-import MySubmissions from "./pages/MySubmissions";
-import ReportDetails from "./pages/ReportDetails";
-import EditReport from "./pages/EditReport";
-import AssignReport from "./pages/AssignReport";
-import TechnicianDashboard from "./pages/TechnicianDashboard";
-import CloseReport from "./pages/ManagerCloseReport";
-import EditProfile from "./pages/EditProfile";
-import UsersList from "./pages/UsersList";
-import UserProfile from "./pages/UserProfile";
-import Projects from "./pages/Projects";
-
-import TestSession from "./TestSession";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrivateRoute from "./components/PrivateRoute";
 import SyncStatus from "./components/SyncStatus";
@@ -30,32 +11,60 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/co
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Home = lazy(() => import("./pages/Home"));
+const NewReport = lazy(() => import("./pages/NewReport"));
+const MySubmissions = lazy(() => import("./pages/MySubmissions"));
+const ReportDetails = lazy(() => import("./pages/ReportDetails"));
+const EditReport = lazy(() => import("./pages/EditReport"));
+const AssignReport = lazy(() => import("./pages/AssignReport"));
+const TechnicianDashboard = lazy(() => import("./pages/TechnicianDashboard"));
+const CloseReport = lazy(() => import("./pages/ManagerCloseReport"));
+const EditProfile = lazy(() => import("./pages/EditProfile"));
+const UsersList = lazy(() => import("./pages/UsersList"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const Projects = lazy(() => import("./pages/Projects"));
+const TestSession = lazy(() => import("./TestSession"));
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[200px] items-center justify-center text-sm text-muted-foreground">
+      Loading...
+    </div>
+  );
+}
+
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/test" element={<TestSession />} />
-      <Route path="/report/:id" element={<ReportDetails />} />
-      <Route path="/report/:id/edit" element={<EditReport />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/test" element={<TestSession />} />
+        <Route path="/report/:id" element={<ReportDetails />} />
+        <Route path="/report/:id/edit" element={<EditReport />} />
 
-      {/* Protected routes */}
-      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/new-report" element={<ProtectedRoute><NewReport /></ProtectedRoute>} />
-      <Route path="/submissions" element={<ProtectedRoute><MySubmissions /></ProtectedRoute>} />
-      <Route path="/assign" element={<PrivateRoute role="manager"><AssignReport /></PrivateRoute>} />
-      <Route path="/close-report" element={<PrivateRoute role="manager"><CloseReport /></PrivateRoute>} />
-      <Route path="/users" element={<PrivateRoute role="manager"><UsersList /></PrivateRoute>} />
-      <Route path="/users/:id" element={<PrivateRoute role="manager"><UserProfile /></PrivateRoute>} />
-      <Route path="/projects" element={<PrivateRoute role="manager"><Projects /></PrivateRoute>} />
-      <Route path="/technician" element={<PrivateRoute role="technician"><TechnicianDashboard /></PrivateRoute>} />
-      <Route path="/profile" element={<ProtectedRoute requireProfileComplete={false}><EditProfile /></ProtectedRoute>} />
-    </Routes>
+        {/* Protected routes */}
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/new-report" element={<ProtectedRoute><NewReport /></ProtectedRoute>} />
+        <Route path="/submissions" element={<ProtectedRoute><MySubmissions /></ProtectedRoute>} />
+        <Route path="/assign" element={<PrivateRoute role="manager"><AssignReport /></PrivateRoute>} />
+        <Route path="/close-report" element={<PrivateRoute role="manager"><CloseReport /></PrivateRoute>} />
+        <Route path="/users" element={<PrivateRoute role="manager"><UsersList /></PrivateRoute>} />
+        <Route path="/users/:id" element={<PrivateRoute role="manager"><UserProfile /></PrivateRoute>} />
+        <Route path="/projects" element={<PrivateRoute role="manager"><Projects /></PrivateRoute>} />
+        <Route path="/technician" element={<PrivateRoute role="technician"><TechnicianDashboard /></PrivateRoute>} />
+        <Route path="/profile" element={<ProtectedRoute requireProfileComplete={false}><EditProfile /></ProtectedRoute>} />
+      </Routes>
+    </Suspense>
   );
 }
 

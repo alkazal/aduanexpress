@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
@@ -7,41 +7,18 @@ import { Button } from "../components/ui/button";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 //import { startNotificationListener } from "../lib/notificationListener";
 
-import { 
-  Inbox, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  FileText,
-  FolderOpen,
-  Lock,
-  TrendingUp,
-  TrendingDown,
-  ArrowRight,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, FolderOpen, Lock } from 'lucide-react';
 
-import {  
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
-
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+//import { IconTrendingDown, IconTrendingUp, TrendingUp } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+const HomeCharts = lazy(() => import("../components/HomeCharts"));
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -228,75 +205,75 @@ const projectChartData = Object.values(
     return acc;
   }, {})
 );
-
+  
   return (
     <div>
-      
+      {syncStatus === "syncing" && (
+        <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
+      )}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
-        <CardHeader>
-          <CardDescription className="flex w-full items-center justify-between gap-2">
-            <span>Total Reports</span>
-            <FileText className="size-4 text-slate-600" />
-          </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {totalReports}
-          </CardTitle>
-          
-        </CardHeader>
-      </Card>
-      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
-        <CardHeader>
-          <CardDescription className="flex w-full items-center justify-between gap-2">
-            <span>Open Reports</span>
-            <FolderOpen className="size-4 text-blue-600" />
-          </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {statusCounts.OPEN}
-          </CardTitle>
-          
-        </CardHeader>
-       
-      </Card>
-      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
-        <CardHeader>
-          <CardDescription className="flex w-full items-center justify-between gap-2">
-            <span>Pending Reports</span>
-            <AlertCircle className="size-4 text-amber-600" />
-          </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {statusCounts.PENDING}
-          </CardTitle>
-          
-        </CardHeader>
-        
-      </Card>
-      <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
-        <CardHeader>
-          <CardDescription className="flex w-full items-center justify-between gap-2">
-            <span>Resolved Reports</span>
-            <CheckCircle className="size-4 text-emerald-600" />
-          </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {statusCounts.RESOLVED}
-          </CardTitle>
-          
-        </CardHeader>
+        <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+          <CardHeader>
+            <CardDescription className="flex w-full items-center justify-between gap-2">
+              <span>Total Reports</span>
+              <FileText className="size-4 text-slate-600" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+              {totalReports}
+            </CardTitle>
+            
+          </CardHeader>
+        </Card>
+        <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+          <CardHeader>
+            <CardDescription className="flex w-full items-center justify-between gap-2">
+              <span>Open Reports</span>
+              <FolderOpen className="size-4 text-blue-600" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+              {statusCounts.OPEN}
+            </CardTitle>
+            
+          </CardHeader>
         
         </Card>
         <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
-        <CardHeader>
-          <CardDescription className="flex w-full items-center justify-between gap-2">
-            <span>Closed Reports</span>
-            <Lock className="size-4 text-gray-600" />
-          </CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {statusCounts.CLOSED}
-          </CardTitle>
-         
-        </CardHeader>
-        
-      </Card>
+          <CardHeader>
+            <CardDescription className="flex w-full items-center justify-between gap-2">
+              <span>Pending Reports</span>
+              <AlertCircle className="size-4 text-amber-600" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+              {statusCounts.PENDING}
+            </CardTitle>
+            
+          </CardHeader>
+          
+        </Card>
+        <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+          <CardHeader>
+            <CardDescription className="flex w-full items-center justify-between gap-2">
+              <span>Resolved Reports</span>
+              <CheckCircle className="size-4 text-emerald-600" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+              {statusCounts.RESOLVED}
+            </CardTitle>
+            
+          </CardHeader>
+          
+        </Card>
+        <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
+          <CardHeader>
+            <CardDescription className="flex w-full items-center justify-between gap-2">
+              <span>Closed Reports</span>
+              <Lock className="size-4 text-gray-600" />
+            </CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+              {statusCounts.CLOSED}
+            </CardTitle>
+          </CardHeader>
+        </Card>
       </div>
       
       {/* <div className="p-4 border rounded">
@@ -304,11 +281,6 @@ const projectChartData = Object.values(
           Wake Up Worker
         </button>
       </div> */}
-
-
-      {syncStatus === "syncing" && (
-        <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
-      )}
 
       {/* Summary Cards */}
       {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
@@ -382,71 +354,19 @@ const projectChartData = Object.values(
 
       </div> */}
 
-      {/* Stacked Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-      {/* Reports by Type */}
-      <div className="bg-white shadow rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4">
-          Reports by Type (Online vs Offline)
-        </h2>
-
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={chartData}>
-            <XAxis dataKey="type" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="online" stackId="a" fill="#3b82f6" />
-            <Bar dataKey="offline" stackId="a" fill="#f87171" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Status Chart */}
-      <div className="bg-white shadow rounded-lg p-4">
-        <h2 className="text-xl font-semibold mb-4">Reports by Status</h2>
-
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={statusChartData}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={80}
-              label
-            >
-              <Cell fill="#3b82f6" />
-              <Cell fill="#f59e0b" />
-              <Cell fill="#6366f1" />
-              <Cell fill="#22c55e" />
-              <Cell fill="#6b7280" />
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-    </div>
-
-      {/* Reports by Project */}
-      <div className="bg-white shadow rounded-lg p-4 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Reports by Project</h2>
-
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={projectChartData}
-            layout="vertical"
-            margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-          >
-            <XAxis type="number" allowDecimals={false} />
-            <YAxis type="category" dataKey="project" />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#6366f1" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <Suspense
+        fallback={
+          <div className="mb-6 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground shadow">
+            Loading charts...
+          </div>
+        }
+      >
+        <HomeCharts
+          chartData={chartData}
+          statusChartData={statusChartData}
+          projectChartData={projectChartData}
+        />
+      </Suspense>
 
       {/* Recent Reports */}
       <div>
