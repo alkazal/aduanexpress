@@ -192,7 +192,7 @@ export default function Login() {
       active = false;
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate]);g
 
   const handleLogin = async (e) => {
     e.preventDefault();
