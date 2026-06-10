@@ -433,7 +433,7 @@ export default function TechnicianDashboard() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+    <div className="p-6">
       <div
         className={`sticky top-16 z-20 mx-0 px-0 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
           isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
