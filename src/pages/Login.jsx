@@ -143,6 +143,9 @@ export default function Login() {
 
       localStorage.setItem("appUser", JSON.stringify(cachedUser));
 
+      // Determine redirect path based on user role
+      const redirectPath = cachedUser.role === "technician" ? "/technician" : "/";
+
       const pendingSubscription = localStorage.getItem("pendingPushSubscription");
       if (pendingSubscription) {
         try {
@@ -157,7 +160,7 @@ export default function Login() {
             })
           );
           setTimeout(() => {
-            if (active) navigate("/");
+            if (active) navigate(redirectPath);
           }, 1200);
           return;
         } catch (error) {
@@ -172,13 +175,13 @@ export default function Login() {
             })
           );
           setTimeout(() => {
-            if (active) navigate("/");
+            if (active) navigate(redirectPath);
           }, 1400);
           return;
         }
       }
 
-      navigate("/");
+      navigate(redirectPath);
     }
 
     hydrateSession();
@@ -235,6 +238,9 @@ export default function Login() {
 
       localStorage.setItem("appUser", JSON.stringify(cachedUser));
 
+      // Determine redirect path based on user role
+      const redirectPath = cachedUser.role === "technician" ? "/technician" : "/";
+
       try {
         await subscribeToPush(user);
         setStatusType("success");
@@ -259,7 +265,7 @@ export default function Login() {
         );
       }
 
-      setTimeout(() => navigate("/", { replace: true }), 1000);
+      setTimeout(() => navigate(redirectPath, { replace: true }), 1000);
     } catch (err) {
       console.error("Unexpected login error:", err);
       setStatusType("error");
