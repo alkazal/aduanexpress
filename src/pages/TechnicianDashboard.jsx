@@ -297,7 +297,7 @@ export default function TechnicianDashboard() {
   );
 
   const statusCounts = {
-    NEW: baseFilteredReports.filter(r => r.status === "New").length,
+    NEW: baseFilteredReports.filter(r => r.status === "Open").length,
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
     RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
@@ -524,15 +524,15 @@ export default function TechnicianDashboard() {
           </Button>
           <Button
             type="button"
-            onClick={() => setSelectedStatus("New")}
+            onClick={() => setSelectedStatus("Open")}
             variant="outline"
             className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-              selectedStatus === "New"
+              selectedStatus === "Open"
                 ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
                 : ""
             }`}
           >
-            New ({statusCounts.NEW})
+            Open ({statusCounts.OPEN})
           </Button>
           <Button
             type="button"
