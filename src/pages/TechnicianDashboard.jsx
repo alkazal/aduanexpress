@@ -644,8 +644,10 @@ export default function TechnicianDashboard() {
             <Card key={r.id} className="border-gray-100 w-full">
               <CardContent className="p-2.5">
                 <div className="min-w-0 w-full overflow-hidden">
-                  <p className="text-[11px] leading-tight text-gray-500 truncate">Ticket #{r.ticket_no}</p>
-                  <StatusBadge status={r.status} className="mt-1 inline-flex max-w-full text-[11px]" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 text-[11px] leading-tight text-gray-500 truncate">Ticket #{r.ticket_no}</p>
+                    <StatusBadge status={r.status} className="inline-flex flex-shrink-0 text-[11px]" />
+                  </div>
                   <h3 className="mt-1 text-sm leading-snug font-semibold text-gray-900 break-words line-clamp-2">{r.title}</h3>
                 </div>
 
