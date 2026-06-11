@@ -10,10 +10,15 @@ const STATUS_CLASS = {
 
 export default function StatusBadge({ status, className = "" }) {
   const tone = STATUS_CLASS[status] || "bg-gray-100 text-gray-600 hover:bg-gray-100";
+  const label = status || "Unknown";
 
   return (
-    <Badge variant="secondary" className={`${tone} ${className}`.trim()}>
-      {status || "Unknown"}
+    <Badge
+      variant="secondary"
+      className={`${tone} max-w-full overflow-hidden ${className}`.trim()}
+      title={label}
+    >
+      <span className="min-w-0 truncate">{label}</span>
     </Badge>
   );
 }

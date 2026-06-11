@@ -212,168 +212,168 @@ export default function MySubmissions() {
           isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
         } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">Reports</h1>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
 
-          <div className="w-full sm:flex-1">
-            <Select
-              className="w-full"
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
+            <div className="w-full sm:flex-1">
+              <Select
+                className="w-full"
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+                <option value="">All Projects</option>
+                {projectOptions.map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="w-full sm:flex-1">
+              <Input
+                type="text"
+                placeholder="Search ticket, title, project, status..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <Button
+              type="button"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              variant="outline"
+              className="h-10"
             >
-              <option value="">All Projects</option>
-              {projectOptions.map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </Select>
-          </div>
+              Clear Filters
+            </Button>
 
-          <div className="w-full sm:flex-1">
-            <Input
-              type="text"
-              placeholder="Search ticket, title, project, status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+            <div className="w-full sm:w-auto flex flex-col">
+              <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                aria-label="Start date"
+              />
+            </div>
 
+            <div className="w-full sm:w-auto flex flex-col">
+              <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                aria-label="End date"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
           <Button
             type="button"
-            onClick={clearFilters}
-            disabled={!hasActiveFilters}
+            onClick={() => setSelectedStatus("")}
             variant="outline"
-            className="h-10"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === ""
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+                : ""
+            }`}
           >
-            Clear Filters
+            All ({baseFilteredItems.length})
           </Button>
-
-          <div className="w-full sm:w-auto flex flex-col">
-            <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              aria-label="Start date"
-            />
-          </div>
-
-          <div className="w-full sm:w-auto flex flex-col">
-            <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              aria-label="End date"
-            />
-          </div>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Open")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Open"
+                ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
+                : ""
+            }`}
+          >
+            Open ({openReports})
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Pending")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Pending"
+                ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
+                : ""
+            }`}
+          >
+            Pending ({pendingReports})
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Resolved")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Resolved"
+                ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
+                : ""
+            }`}
+          >
+            Resolved ({resolvedReports})
+          </Button>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === ""
-              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
-              : ""
-          }`}
-        >
-          All ({baseFilteredItems.length})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Open")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Open"
-              ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
-              : ""
-          }`}
-        >
-          Open ({openReports})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Pending")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Pending"
-              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-              : ""
-          }`}
-        >
-          Pending ({pendingReports})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Resolved")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Resolved"
-              ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
-              : ""
-          }`}
-        >
-          Resolved ({resolvedReports})
-        </Button>
-      </div>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {/* Total */}
-      <Card
-        onClick={() => setSelectedStatus("")}
-        className={`cursor-pointer hover:bg-gray-50 ${
-          selectedStatus === "" ? "ring-2 ring-blue-500" : ""
-        }`}
-      >
-        <CardContent className="p-4">
-          <p className="text-gray-500 text-sm">Total Reports</p>
-          <p className="text-2xl font-bold">{totalReports}</p>
-        </CardContent>
-      </Card>
-      {/* Open */}
-      <Card
-        onClick={() => setSelectedStatus("Open")}
-        className={`cursor-pointer hover:bg-gray-50 ${
-          selectedStatus === "Open" ? "ring-2 ring-yellow-500" : ""
-        }`}
-      >
-        <CardContent className="p-4">
-          <p className="text-gray-500 text-sm">Open</p>
-          <p className="text-2xl font-bold text-yellow-600">{openReports}</p>
-        </CardContent>
-      </Card>
-      {/* Pending */}
-      <Card
-        onClick={() => setSelectedStatus("Pending")}
-        className={`cursor-pointer hover:bg-gray-50 ${
-          selectedStatus === "Pending" ? "ring-2 ring-orange-500" : ""
-        }`}
-      >
-        <CardContent className="p-4">
-          <p className="text-gray-500 text-sm">Pending</p>
-          <p className="text-2xl font-bold text-orange-600">{pendingReports}</p>
-        </CardContent>
-      </Card>
-      {/* Resolved */}
-      <Card
-        onClick={() => setSelectedStatus("Resolved")}
-        className={`cursor-pointer hover:bg-gray-50 ${
-          selectedStatus === "Resolved" ? "ring-2 ring-green-500" : ""
-        }`}
-      >
-        <CardContent className="p-4">
-          <p className="text-gray-500 text-sm">Resolved</p>
-          <p className="text-2xl font-bold text-green-600">{resolvedReports}</p>
-        </CardContent>
-      </Card>
-    </div>
+        {/* Total */}
+        <Card
+          onClick={() => setSelectedStatus("")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "" ? "ring-2 ring-blue-500" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <p className="text-gray-500 text-sm">Total Reports</p>
+            <p className="text-2xl font-bold">{totalReports}</p>
+          </CardContent>
+        </Card>
+        {/* Open */}
+        <Card
+          onClick={() => setSelectedStatus("Open")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Open" ? "ring-2 ring-yellow-500" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <p className="text-gray-500 text-sm">Open</p>
+            <p className="text-2xl font-bold text-yellow-600">{openReports}</p>
+          </CardContent>
+        </Card>
+        {/* Pending */}
+        <Card
+          onClick={() => setSelectedStatus("Pending")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Pending" ? "ring-2 ring-orange-500" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <p className="text-gray-500 text-sm">Pending</p>
+            <p className="text-2xl font-bold text-orange-600">{pendingReports}</p>
+          </CardContent>
+        </Card>
+        {/* Resolved */}
+        <Card
+          onClick={() => setSelectedStatus("Resolved")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Resolved" ? "ring-2 ring-green-500" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <p className="text-gray-500 text-sm">Resolved</p>
+            <p className="text-2xl font-bold text-green-600">{resolvedReports}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {syncStatus === "syncing" && (
         <Alert className="mb-2 border-blue-200 bg-blue-50 text-blue-700">

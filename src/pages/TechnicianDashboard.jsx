@@ -433,132 +433,132 @@ export default function TechnicianDashboard() {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <div
         className={`sticky top-16 z-20 mx-0 px-0 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
           isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
         } sm:static sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="w-full sm:w-auto">
-          <h1 className="text-2xl font-bold">Technician Dashboard</h1>
-          <p className="text-gray-500 text-sm">
-            Update your personal information 
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
-          <div className="w-full sm:flex-1">
-            <Label className="text-xs font-semibold text-gray-700 mb-1">
-              Project
-            </Label>
-            <Select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-            >
-            <option value="">All Projects</option>
-            {projectOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </Select>
-        </div>  
-
-          <div className="w-full sm:flex-1">
-            <Input
-              type="text"
-              placeholder="Search ticket, title, project, status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-xl font-bold">Technician Dashboard</h1>
+            <p className="text-gray-500 text-sm">
+              Update your personal information 
+            </p>
           </div>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
+            <div className="w-full sm:flex-1">
+              <Label className="text-xs font-semibold text-gray-700 mb-1">
+                Project
+              </Label>
+              <Select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+              >
+              <option value="">All Projects</option>
+              {projectOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </Select>
+          </div>  
 
+            <div className="w-full sm:flex-1">
+              <Input
+                type="text"
+                placeholder="Search ticket, title, project, status..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <Button
+              type="button"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              variant="outline"
+              className="h-10"
+            >
+              Clear Filters
+            </Button>
+
+            <div className="w-full flex flex-col">
+            <Label className="text-xs font-semibold text-gray-700 mb-1">
+              Start Date
+            </Label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              aria-label="Start date"
+            />
+            </div>
+
+            <div className="w-full flex flex-col">
+            <Label className="text-xs font-semibold text-gray-700 mb-1">
+              End Date
+            </Label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              aria-label="End date"
+            />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
           <Button
             type="button"
-            onClick={clearFilters}
-            disabled={!hasActiveFilters}
+            onClick={() => setSelectedStatus("")}
             variant="outline"
-            className="h-10"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === ""
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+                : ""
+            }`}
           >
-            Clear Filters
+            All ({baseFilteredReports.length})
           </Button>
-
-          <div className="w-full flex flex-col">
-          <Label className="text-xs font-semibold text-gray-700 mb-1">
-            Start Date
-          </Label>
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            aria-label="Start date"
-          />
-          </div>
-
-          <div className="w-full flex flex-col">
-          <Label className="text-xs font-semibold text-gray-700 mb-1">
-            End Date
-          </Label>
-          <Input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            aria-label="End date"
-          />
-          </div>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Open")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Open"
+                ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
+                : ""
+            }`}
+          >
+            Open ({statusCounts.OPEN})
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Pending")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Pending"
+                ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
+                : ""
+            }`}
+          >
+            Pending ({statusCounts.PENDING})
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Resolved")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Resolved"
+                ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
+                : ""
+            }`}
+          >
+            Resolved ({statusCounts.RESOLVED})
+          </Button>
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === ""
-              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
-              : ""
-          }`}
-        >
-          All ({baseFilteredReports.length})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Open")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Open"
-              ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
-              : ""
-          }`}
-        >
-          Open ({statusCounts.OPEN})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Pending")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Pending"
-              ? "bg-orange-500 text-white border-orange-500 hover:bg-orange-500"
-              : ""
-          }`}
-        >
-          Pending ({statusCounts.PENDING})
-        </Button>
-        <Button
-          type="button"
-          onClick={() => setSelectedStatus("Resolved")}
-          variant="outline"
-          className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-            selectedStatus === "Resolved"
-              ? "bg-green-600 text-white border-green-600 hover:bg-green-600"
-              : ""
-          }`}
-        >
-          Resolved ({statusCounts.RESOLVED})
-        </Button>
-      </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -571,18 +571,14 @@ export default function TechnicianDashboard() {
           }`}
         >
           <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Assigned Tickets</p>
+              <p className="text-3xl font-bold text-gray-700">{baseFilteredReports.length}</p>
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-gray-500">Assigned Tickets</p>
-            <p className="text-3xl font-bold text-gray-700">
-              {filteredReports.length}
-            </p>
-          </div>
-
-          <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-            <Inbox className="h-6 w-6 text-blue-600" />
-          </div>
-
+            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Inbox className="h-6 w-6 text-blue-600" />
+            </div>
           </CardContent>
         </Card>
 
@@ -594,18 +590,14 @@ export default function TechnicianDashboard() {
           }`}
         >
           <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Open</p>
+              <p className="text-3xl font-bold text-gray-700">{statusCounts.OPEN}</p>
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-gray-500">Open</p>
-            <p className="text-3xl font-bold text-gray-700">
-              {statusCounts.OPEN}
-            </p>
-          </div>
-
-          <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
-            <Clock className="h-6 w-6 text-purple-600" />
-          </div>
-
+            <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-purple-600" />
+            </div>
           </CardContent>
         </Card>
 
@@ -617,18 +609,14 @@ export default function TechnicianDashboard() {
           }`}
         >
           <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-3xl font-bold text-red-600">{statusCounts.PENDING}</p>
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="text-3xl font-bold text-red-600">
-              {statusCounts.PENDING}
-            </p>
-          </div>
-
-          <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
-            <AlertCircle className="h-6 w-6 text-red-600" />
-          </div>
-
+            <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
           </CardContent>
         </Card>
 
@@ -640,18 +628,14 @@ export default function TechnicianDashboard() {
           }`}
         >
           <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Resolved</p>
+              <p className="text-3xl font-bold text-green-600">{statusCounts.RESOLVED}</p>
+            </div>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-gray-500">Resolved</p>
-            <p className="text-3xl font-bold text-green-600">
-              {statusCounts.RESOLVED}
-            </p>
-          </div>
-
-          <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
-
+            <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
           </CardContent>
         </Card>
 
@@ -664,77 +648,75 @@ export default function TechnicianDashboard() {
       )}
 
       {filteredReports.length > 0 && (
-        <div className="mt-4 space-y-3 sm:hidden">
+        <div className="mt-3 space-y-2.5 sm:hidden px-2">
           {pagedReports.map((r) => (
-            <Card key={r.id} className="border-gray-100">
-              <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500">Ticket #{r.ticket_no}</p>
-                  <h3 className="font-semibold text-gray-900 truncate">{r.title}</h3>
+            <Card key={r.id} className="border-gray-100 w-full">
+              <CardContent className="p-2.5">
+                <div className="min-w-0 w-full overflow-hidden">
+                  <p className="text-[11px] leading-tight text-gray-500 truncate">Ticket #{r.ticket_no}</p>
+                  <StatusBadge status={r.status} className="mt-1 inline-flex max-w-full text-[11px]" />
+                  <h3 className="mt-1 text-sm leading-snug font-semibold text-gray-900 break-words line-clamp-2">{r.title}</h3>
                 </div>
-                <StatusBadge status={r.status} className="text-xs whitespace-nowrap" />
-              </div>
 
-              <div className="mt-2 text-xs text-gray-600 space-y-1">
-                <p>Project: {r.project_name || "-"}</p>
-                <p>Created: {new Date(r.created_at).toLocaleDateString()}</p>
-              </div>
+                <div className="mt-1.5 text-[11px] text-gray-600 space-y-0.5">
+                  <p className="truncate">Project: {r.project_name || "-"}</p>
+                  <p>Created: {new Date(r.created_at).toLocaleDateString()}</p>
+                </div>
 
-              <p className="mt-2 text-xs text-gray-500 line-clamp-2">
-                {r.description || "No description"}
-              </p>
+                <p className="mt-1.5 text-[11px] leading-snug text-gray-500 line-clamp-2">
+                  {r.description || "No description"}
+                </p>
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Select
-                  className="h-9 text-xs"
-                  value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
-                  onChange={(e) =>
-                    setLevelUpdates({
-                      ...levelUpdates,
-                      [r.id]: e.target.value
-                    })
-                  }
-                >
-                  <option value="">Level</option>
-                  <option value="1">L1</option>
-                  <option value="2">L2</option>
-                  <option value="3">L3</option>
-                </Select>
+                <div className="mt-2.5 grid grid-cols-2 gap-1.5 w-full">
+                  <Select
+                    className="h-8 text-xs w-full"
+                    value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
+                    onChange={(e) =>
+                      setLevelUpdates({
+                        ...levelUpdates,
+                        [r.id]: e.target.value
+                      })
+                    }
+                  >
+                    <option value="">Level</option>
+                    <option value="1">L1</option>
+                    <option value="2">L2</option>
+                    <option value="3">L3</option>
+                  </Select>
 
-                <Select
-                  className="h-9 text-xs"
-                  value={statusUpdates[r.id] || ""}
-                  onChange={(e) =>
-                    setStatusUpdates({
-                      ...statusUpdates,
-                      [r.id]: e.target.value
-                    })
-                  }
-                >
-                  <option value="">Change</option>
-                  <option value="Open">Open</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Resolved">Resolved</option>
-                </Select>
-              </div>
+                  <Select
+                    className="h-8 text-xs w-full"
+                    value={statusUpdates[r.id] || ""}
+                    onChange={(e) =>
+                      setStatusUpdates({
+                        ...statusUpdates,
+                        [r.id]: e.target.value
+                      })
+                    }
+                  >
+                    <option value="">Change</option>
+                    <option value="Open">Open</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Resolved">Resolved</option>
+                  </Select>
+                </div>
 
-              <div className="mt-3 flex gap-2">
-                <Button
-                  onClick={() => updateReport(r.id)}
-                  disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
-                  className="flex-1 h-9 bg-green-600 hover:bg-green-700 text-xs"
-                >
-                  Update
-                </Button>
+                <div className="mt-2.5 flex flex-col gap-1.5">
+                  <Button
+                    onClick={() => updateReport(r.id)}
+                    disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
+                    className="w-full h-8 bg-green-600 hover:bg-green-700 text-xs"
+                  >
+                    Update
+                  </Button>
 
-                <Button
-                  onClick={() => navigate(`/report/${r.id}`)}
-                  className="flex-1 h-9 text-xs"
-                >
-                  View
-                </Button>
-              </div>
+                  <Button
+                    onClick={() => navigate(`/report/${r.id}`)}
+                    className="w-full h-8 text-xs"
+                  >
+                    View
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -742,116 +724,115 @@ export default function TechnicianDashboard() {
       )}
 
       <Card className="mt-4 overflow-x-auto hidden sm:block">
-      <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-x-auto">
 
-      <Table className="min-w-[900px] text-left">
+        <Table className="min-w-[900px] text-left">
 
-        <TableHeader className="bg-gray-50 text-gray-600">
-          <TableRow>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Ticket ID</TableHead>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Subject</TableHead>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Project</TableHead>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Status</TableHead>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Created</TableHead>
-            <TableHead className="px-4 py-3 whitespace-nowrap">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-
-          {pagedReports.map((r) => (
-
-            <TableRow
-              key={r.id}
-              className="border-t hover:bg-gray-50"
-            >
-
-              <TableCell className="px-4 py-3 whitespace-nowrap font-medium">
-                #{r.ticket_no}
-              </TableCell>
-
-              <TableCell className="px-4 py-3 whitespace-nowrap">
-                <div className="font-semibold">{r.title}</div>
-                <div className="text-gray-500 text-xs">
-                  {r.description?.slice(0,40)}
-                </div>
-              </TableCell>
-
-              <TableCell className="px-4 py-3 whitespace-nowrap">
-                {r.project_name || "-"}
-              </TableCell>
-
-              <TableCell className="px-4 py-3 whitespace-nowrap">
-                <StatusBadge status={r.status} className="text-xs" />
-              </TableCell>
-
-              <TableCell className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                {new Date(r.created_at).toLocaleDateString()}
-              </TableCell>
-
-              <TableCell className="px-4 py-3 flex whitespace-nowrap gap-2 items-center">
-  
-                {/* LEVEL */}
-                <Select
-                  className="h-8 text-xs"
-                  value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
-                  onChange={(e) =>
-                    setLevelUpdates({
-                      ...levelUpdates,
-                      [r.id]: e.target.value
-                    })
-                  }
-                >
-                  <option value="">Level</option>
-                  <option value="1">L1</option>
-                  <option value="2">L2</option>
-                  <option value="3">L3</option>
-                </Select>
-
-                <Select
-                  className="h-8 text-sm"
-                  value={statusUpdates[r.id] || ""}
-                  onChange={(e) =>
-                    setStatusUpdates({
-                      ...statusUpdates,
-                      [r.id]: e.target.value
-                    })
-                  }
-                >
-                  <option value="">Change</option>
-                  <option value="Open">Open</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Resolved">Resolved</option>
-                </Select>
-
-                <Button
-                  onClick={() => updateReport(r.id)}
-                  disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
-                  className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
-                >
-                  Update
-                </Button>
-
-                <Button
-                  onClick={() => navigate(`/report/${r.id}`)}
-                  className="h-8 text-xs px-3 py-1"
-                >
-                  View
-                </Button>
-
-              </TableCell>
-
+          <TableHeader className="bg-gray-50 text-gray-600">
+            <TableRow>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Ticket ID</TableHead>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Subject</TableHead>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Project</TableHead>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Status</TableHead>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Created</TableHead>
+              <TableHead className="px-4 py-3 whitespace-nowrap">Action</TableHead>
             </TableRow>
+          </TableHeader>
 
-          ))}
+          <TableBody>
 
-        </TableBody>
+            {pagedReports.map((r) => (
 
-      </Table>
+              <TableRow
+                key={r.id}
+                className="border-t hover:bg-gray-50"
+              >
 
-    </div>
+                <TableCell className="px-4 py-3 whitespace-nowrap font-medium">
+                  #{r.ticket_no}
+                </TableCell>
 
-    </Card>
+                <TableCell className="px-4 py-3 whitespace-nowrap">
+                  <div className="font-semibold">{r.title}</div>
+                  <div className="text-gray-500 text-xs">
+                    {r.description?.slice(0,40)}
+                  </div>
+                </TableCell>
+
+                <TableCell className="px-4 py-3 whitespace-nowrap">
+                  {r.project_name || "-"}
+                </TableCell>
+
+                <TableCell className="px-4 py-3 whitespace-nowrap">
+                  <StatusBadge status={r.status} className="text-xs" />
+                </TableCell>
+
+                <TableCell className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                  {new Date(r.created_at).toLocaleDateString()}
+                </TableCell>
+
+                <TableCell className="px-4 py-3 flex whitespace-nowrap gap-2 items-center">
+    
+                  <Select
+                    className="h-8 text-xs"
+                    value={levelUpdates[r.id] ?? r.maintenance_level ?? ""}
+                    onChange={(e) =>
+                      setLevelUpdates({
+                        ...levelUpdates,
+                        [r.id]: e.target.value
+                      })
+                    }
+                  >
+                    <option value="">Level</option>
+                    <option value="1">L1</option>
+                    <option value="2">L2</option>
+                    <option value="3">L3</option>
+                  </Select>
+
+                  <Select
+                    className="h-8 text-sm"
+                    value={statusUpdates[r.id] || ""}
+                    onChange={(e) =>
+                      setStatusUpdates({
+                        ...statusUpdates,
+                        [r.id]: e.target.value
+                      })
+                    }
+                  >
+                    <option value="">Change</option>
+                    <option value="Open">Open</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Resolved">Resolved</option>
+                  </Select>
+
+                  <Button
+                    onClick={() => updateReport(r.id)}
+                    disabled={!statusUpdates[r.id] && !levelUpdates[r.id]}
+                    className="h-8 px-2 py-1 text-xs bg-green-600 hover:bg-green-700"
+                  >
+                    Update
+                  </Button>
+
+                  <Button
+                    onClick={() => navigate(`/report/${r.id}`)}
+                    className="h-8 text-xs px-3 py-1"
+                  >
+                    View
+                  </Button>
+
+                </TableCell>
+
+              </TableRow>
+
+            ))}
+
+          </TableBody>
+
+        </Table>
+
+        </div>
+
+      </Card>
 
     {filteredReports.length > 0 && (
       <div className="mt-4 flex items-center justify-between gap-3">
