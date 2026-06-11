@@ -297,7 +297,7 @@ export default function TechnicianDashboard() {
   );
 
   const statusCounts = {
-    OPEN: baseFilteredReports.filter(r => r.status === "Open").length,
+    NEW: baseFilteredReports.filter(r => r.status === "New").length,
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
     RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
@@ -442,9 +442,9 @@ export default function TechnicianDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full sm:w-auto">
             <h1 className="text-xl font-bold">Technician Dashboard</h1>
-            <p className="text-gray-500 text-sm">
+            {/* <p className="text-gray-500 text-sm">
               Update your personal information 
-            </p>
+            </p> */}
           </div>
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
             <div className="w-full sm:flex-1">
@@ -483,7 +483,7 @@ export default function TechnicianDashboard() {
               Clear Filters
             </Button>
 
-            <div className="w-full flex flex-col">
+            <div className="w-full sm:flex-1">
             <Label className="text-xs font-semibold text-gray-700 mb-1">
               Start Date
             </Label>
@@ -495,7 +495,7 @@ export default function TechnicianDashboard() {
             />
             </div>
 
-            <div className="w-full flex flex-col">
+            <div className="w-full sm:flex-1">
             <Label className="text-xs font-semibold text-gray-700 mb-1">
               End Date
             </Label>
@@ -524,15 +524,15 @@ export default function TechnicianDashboard() {
           </Button>
           <Button
             type="button"
-            onClick={() => setSelectedStatus("Open")}
+            onClick={() => setSelectedStatus("New")}
             variant="outline"
             className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
-              selectedStatus === "Open"
+              selectedStatus === "New"
                 ? "bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-500"
                 : ""
             }`}
           >
-            Open ({statusCounts.OPEN})
+            New ({statusCounts.NEW})
           </Button>
           <Button
             type="button"
@@ -561,9 +561,7 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-
-        {/* Assigned Tickets */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -581,8 +579,6 @@ export default function TechnicianDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Open */}
         <Card
           onClick={() => setSelectedStatus("Open")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -600,8 +596,6 @@ export default function TechnicianDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Pending */}
         <Card
           onClick={() => setSelectedStatus("Pending")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -619,8 +613,6 @@ export default function TechnicianDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Resolved */}
         <Card
           onClick={() => setSelectedStatus("Resolved")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -638,8 +630,7 @@ export default function TechnicianDashboard() {
             </div>
           </CardContent>
         </Card>
-
-      </div>
+      </div> */}
 
       {filteredReports.length === 0 && (
         <Alert>
