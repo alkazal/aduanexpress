@@ -36,6 +36,32 @@ function safeDate(d) {
   return d || new Date().toISOString();
 }
 
+async function notifyManagersNewReportEmail(report) {
+  try {
+    const { error } = await supabase.functions.invoke("send-manager-report-email", {
+      body: {
+        reportId: report.id,
+        title: report.title,
+        description: report.description,
+        projectName: report.project_name || null,
+        requestorName: report.requestor_name || null,
+        requestDatetime: report.request_datetime || null,
+        createdAt: report.created_at || new Date().toISOString()
+      }
+    });
+
+    if (error) {
+      console.error("Failed to trigger manager email notification:", error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Error while triggering manager email notification:", err);
+    return false;
+  }
+}
+
 /* ===============================
    SYNC FUNCTION
 ================================ */
@@ -189,6 +215,7 @@ export async function syncReports() {
       }
 
       const reportId = report.id;
+      const isFirstServerSync = !report._synced_once;
 
       // ----------------------------------------------------------
       // Build safe payload (NEVER overwrite user_id if exists online)
@@ -251,6 +278,22 @@ export async function syncReports() {
             console.error("❌ Sync error", upErr.code, upErr.message);
           }
           continue;
+        }
+
+        if (isFirstServerSync && !report._manager_email_sent) {
+          const managerEmailSent = await notifyManagersNewReportEmail({
+            ...report,
+            id: reportId
+          });
+
+          if (managerEmailSent) {
+            await db.reports.update(reportId, {
+              _manager_email_sent: true,
+              _manager_email_pending: false
+            });
+          } else {
+            await db.reports.update(reportId, { _manager_email_pending: true });
+          }
         }
 
 
@@ -348,6 +391,25 @@ export async function syncReports() {
 
       } catch (err) {
         console.error("❌ Error syncing report:", err);
+      }
+    }
+
+    /* =========================================================
+       3b. RETRY PENDING MANAGER EMAILS
+    ========================================================== */
+    const pendingManagerEmailReports = await db.reports
+      .filter(r => r?._manager_email_pending === true && r?._synced_once === true)
+      .toArray();
+
+    for (const report of pendingManagerEmailReports) {
+      if (!report?.id || report._manager_email_sent) continue;
+
+      const sent = await notifyManagersNewReportEmail(report);
+      if (sent) {
+        await db.reports.update(report.id, {
+          _manager_email_sent: true,
+          _manager_email_pending: false
+        });
       }
     }
 

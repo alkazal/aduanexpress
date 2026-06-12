@@ -135,6 +135,8 @@ export default function NewReport() {
       request_datetime: requestDatetime ? new Date(requestDatetime).toISOString() : null,
       created_at: createdAt,
       user_id: user.id,
+      _manager_email_sent: false,
+      _manager_email_pending: true,
       synced: false,
       to_delete: false,
     });
