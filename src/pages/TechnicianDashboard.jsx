@@ -17,7 +17,9 @@ import {
   Inbox,
   Clock,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  CalendarRange,
+  ChevronDown
 } from "lucide-react";
 
 function isNetworkLikeError(error) {
@@ -43,6 +45,7 @@ export default function TechnicianDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
+  const [isMobileDateFiltersOpen, setIsMobileDateFiltersOpen] = useState(false);
   const [levelUpdates, setLevelUpdates] = useState({});
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
@@ -74,6 +77,12 @@ export default function TechnicianDashboard() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
+
+  useEffect(() => {
+    if (startDate || endDate) {
+      setIsMobileDateFiltersOpen(true);
+    }
+  }, [startDate, endDate]);
 
   async function loadReports() {
     setLoading(true);
@@ -309,6 +318,8 @@ export default function TechnicianDashboard() {
     Boolean(endDate) ||
     Boolean(searchTerm.trim());
 
+  const hasDateFilters = Boolean(startDate) || Boolean(endDate);
+
   const totalPages = Math.max(1, Math.ceil(filteredReports.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * PAGE_SIZE;
@@ -483,7 +494,7 @@ export default function TechnicianDashboard() {
               Clear Filters
             </Button>
 
-            <div className="w-full sm:flex-1">
+            <div className="hidden sm:block w-full sm:flex-1">
             <Label className="text-xs font-semibold text-gray-700 mb-1">
               Start Date
             </Label>
@@ -495,7 +506,7 @@ export default function TechnicianDashboard() {
             />
             </div>
 
-            <div className="w-full sm:flex-1">
+            <div className="hidden sm:block w-full sm:flex-1">
             <Label className="text-xs font-semibold text-gray-700 mb-1">
               End Date
             </Label>
@@ -507,6 +518,53 @@ export default function TechnicianDashboard() {
             />
             </div>
           </div>
+        </div>
+
+        <div className="mt-3 sm:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsMobileDateFiltersOpen((open) => !open)}
+            className="w-full h-10 justify-between"
+          >
+            <span className="flex items-center gap-2 text-sm">
+              <CalendarRange className="h-4 w-4" />
+              {hasDateFilters ? "Date range applied" : "Filter by date"}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${
+                isMobileDateFiltersOpen ? "rotate-180" : ""
+              }`}
+            />
+          </Button>
+
+          {isMobileDateFiltersOpen && (
+            <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">
+                  Start Date
+                </Label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  aria-label="Start date"
+                />
+              </div>
+
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">
+                  End Date
+                </Label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  aria-label="End date"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
@@ -561,7 +619,7 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -630,7 +688,7 @@ export default function TechnicianDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div> */}
+      </div>
 
       {filteredReports.length === 0 && (
         <Alert>
