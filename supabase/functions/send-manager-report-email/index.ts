@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,8 +46,12 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const emailFrom = Deno.env.get("EMAIL_FROM");
+    const smtpHost = Deno.env.get("SMTP_HOST");
+    const smtpPort = Number(Deno.env.get("SMTP_PORT") || "465");
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPass = Deno.env.get("SMTP_PASS");
+    const smtpFrom = Deno.env.get("SMTP_FROM") || smtpUser;
+    const smtpSecure = (Deno.env.get("SMTP_SECURE") || "true").toLowerCase() === "true";
 
     if (!supabaseUrl || !serviceRoleKey) {
       return new Response(
@@ -55,8 +60,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Email is optional — only sent when both keys are configured
-    const emailEnabled = Boolean(resendApiKey && emailFrom);
+    // Email is optional — only sent when SMTP config is complete
+    const emailEnabled = Boolean(smtpHost && smtpPort && smtpUser && smtpPass && smtpFrom);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- 2. EMAIL via Resend (optional — only when keys are configured) ----
+    // ---- 2. EMAIL via SMTP (optional — only when config is complete) ----
     let emailSent = 0;
     let emailError: string | null = null;
 
@@ -191,18 +196,29 @@ Deno.serve(async (req) => {
           detailsUrl ? `Details: ${detailsUrl}` : ""
         ].filter(Boolean).join("\n");
 
-        const [to, ...bcc] = managerEmails;
-        const resendResponse = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from: emailFrom, to, ...(bcc.length ? { bcc } : {}), subject, html, text })
-        });
+        try {
+          const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpSecure,
+            auth: {
+              user: smtpUser,
+              pass: smtpPass
+            }
+          });
 
-        if (resendResponse.ok) {
+          await transporter.sendMail({
+            from: smtpFrom,
+            to: managerEmails,
+            subject,
+            html,
+            text
+          });
+
           emailSent = managerEmails.length;
-        } else {
-          emailError = await resendResponse.text();
-          console.error("Resend error:", emailError);
+        } catch (err) {
+          emailError = err instanceof Error ? err.message : "SMTP send failed";
+          console.error("SMTP error:", emailError);
         }
       }
     }
