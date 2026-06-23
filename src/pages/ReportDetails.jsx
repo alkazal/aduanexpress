@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
 import { deleteReport } from "../utils/deleteReport";
+import ReactMarkdown from "react-markdown";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -24,6 +25,13 @@ export default function ReportDetails() {
   const [internalNote, setInternalNote] = useState("");
   const [comments, setComments] = useState([]);
   const [activeTab, setActiveTab] = useState("public");
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingMessage, setEditingMessage] = useState("");
+  const [commentActionLoading, setCommentActionLoading] = useState(false);
+  const [publicReplyAttachments, setPublicReplyAttachments] = useState([]);
+  const [internalNoteAttachments, setInternalNoteAttachments] = useState([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
 
   const [userRole, setUserRole] = useState(null);
   const isStaff = userRole === "manager" || userRole === "technician";
@@ -41,6 +49,8 @@ export default function ReportDetails() {
         if (!user) {
           return;
         }
+
+        setCurrentUserId(user.id);
 
         const { data: profileData, error: profileError } = await supabase
           .from("user_profiles")
@@ -153,7 +163,20 @@ export default function ReportDetails() {
         if (commentError) {
           console.error("Error fetching comments:", commentError);
         } else if (commentData) {
-          setComments(commentData);
+          // Fetch attachments for each comment
+          const commentsWithAttachments = await Promise.all(
+            commentData.map(async (comment) => {
+              const { data: attachData, error: attachError } = await supabase
+                .from("comment_attachments")
+                .select("*")
+                .eq("comment_id", comment.id);
+              return {
+                ...comment,
+                attachments: attachError ? [] : attachData || []
+              };
+            })
+          );
+          setComments(commentsWithAttachments);
         }
       } catch (err) {
         console.error("Unexpected error loading report:", err);
@@ -200,6 +223,8 @@ export default function ReportDetails() {
         </Alert>
       </div>
     );
+
+  const canManageReport = userRole === "manager" || (currentUserId && report.user_id === currentUserId);
 
   // ----------------------------------------------------
   // BUILD STATUS TIMELINE (NEW CLEAN VERSION)
@@ -260,15 +285,23 @@ export default function ReportDetails() {
   // FINAL SORT
   timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
+  async function handlePublicReplyAttachments(e) {
+    const files = Array.from(e.target.files || []);
+    setPublicReplyAttachments(prev => [...prev, ...files]);
+    e.target.value = "";
+  }
+
   async function sendPublicReply() {
-    if (!publicReply.trim()) return;
+    if (!publicReply.trim() && publicReplyAttachments.length === 0) return;
+
+    setUploadingAttachments(true);
 
     // Get logged-in user FIRST
     const {
       data: { user }
     } = await supabase.auth.getUser();
 
-    // Then insert
+    // Then insert comment
     const { data, error } = await supabase
       .from("report_comments")
       .insert({
@@ -280,14 +313,63 @@ export default function ReportDetails() {
       .select()
       .single();
 
-    if (!error) {
-      setComments(prev => [data, ...prev]);
-      setPublicReply("");
+    if (error) {
+      console.error("Error sending reply:", error);
+      setUploadingAttachments(false);
+      return;
     }
+
+    // Upload attachments if any
+    const uploadedAttachments = [];
+    for (const file of publicReplyAttachments) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("report-attachments")
+        .upload(`comment/${data.id}/${fileName}`, file);
+
+      if (!uploadError && uploadData) {
+        const { data: { publicUrl } } = supabase.storage
+          .from("report-attachments")
+          .getPublicUrl(`comment/${data.id}/${fileName}`);
+
+        const { error: attachError, data: attachData } = await supabase
+          .from("comment_attachments")
+          .insert({
+            comment_id: data.id,
+            file_name: file.name,
+            file_url: publicUrl,
+            file_size: file.size,
+            mime_type: file.type,
+            uploaded_by: user.id
+          })
+          .select()
+          .single();
+
+        if (!attachError && attachData) {
+          uploadedAttachments.push(attachData);
+        }
+      }
+    }
+
+    setComments(prev => [{
+      ...data,
+      attachments: uploadedAttachments
+    }, ...prev]);
+    setPublicReply("");
+    setPublicReplyAttachments([]);
+    setUploadingAttachments(false);
+  }
+
+  async function handleInternalNoteAttachments(e) {
+    const files = Array.from(e.target.files || []);
+    setInternalNoteAttachments(prev => [...prev, ...files]);
+    e.target.value = "";
   }
 
   async function sendInternalNote() {
-    if (!internalNote.trim()) return;
+    if (!internalNote.trim() && internalNoteAttachments.length === 0) return;
+
+    setUploadingAttachments(true);
 
     const {
       data: { user }
@@ -304,10 +386,132 @@ export default function ReportDetails() {
       .select()
       .single();
 
-    if (!error) {
-      setComments(prev => [data, ...prev]);
-      setInternalNote("");
+    if (error) {
+      console.error("Error sending internal note:", error);
+      setUploadingAttachments(false);
+      return;
     }
+
+    // Upload attachments if any
+    const uploadedAttachments = [];
+    for (const file of internalNoteAttachments) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from("report-attachments")
+        .upload(`comment/${data.id}/${fileName}`, file);
+
+      if (!uploadError && uploadData) {
+        const { data: { publicUrl } } = supabase.storage
+          .from("report-attachments")
+          .getPublicUrl(`comment/${data.id}/${fileName}`);
+
+        const { error: attachError, data: attachData } = await supabase
+          .from("comment_attachments")
+          .insert({
+            comment_id: data.id,
+            file_name: file.name,
+            file_url: publicUrl,
+            file_size: file.size,
+            mime_type: file.type,
+            uploaded_by: user.id
+          })
+          .select()
+          .single();
+
+        if (!attachError && attachData) {
+          uploadedAttachments.push(attachData);
+        }
+      }
+    }
+
+    setComments(prev => [{
+      ...data,
+      attachments: uploadedAttachments
+    }, ...prev]);
+    setInternalNote("");
+    setInternalNoteAttachments([]);
+    setUploadingAttachments(false);
+  }
+
+  function beginEditComment(comment) {
+    setEditingCommentId(comment.id);
+    setEditingMessage(comment.message || "");
+  }
+
+  function cancelEditComment() {
+    setEditingCommentId(null);
+    setEditingMessage("");
+  }
+
+  async function saveEditComment(commentId) {
+    if (!currentUserId || !editingMessage.trim()) return;
+
+    setCommentActionLoading(true);
+
+    const nextMessage = editingMessage.trim();
+    const updatedAt = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("report_comments")
+      .update({
+        message: nextMessage,
+        updated_at: updatedAt
+      })
+      .eq("id", commentId)
+      .eq("user_id", currentUserId);
+
+    if (error) {
+      console.error("Error updating comment:", error);
+      setCommentActionLoading(false);
+      return;
+    }
+
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? {
+              ...c,
+              message: nextMessage,
+              updated_at: updatedAt
+            }
+          : c
+      )
+    );
+
+    cancelEditComment();
+    setCommentActionLoading(false);
+  }
+
+  async function deleteOwnComment(commentId) {
+    if (!currentUserId) return;
+    if (!confirm("Delete this post?")) return;
+
+    setCommentActionLoading(true);
+
+    const { error } = await supabase
+      .from("report_comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("user_id", currentUserId);
+
+    if (error) {
+      console.error("Error deleting comment:", error);
+      setCommentActionLoading(false);
+      return;
+    }
+
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+
+    if (editingCommentId === commentId) {
+      cancelEditComment();
+    }
+
+    setCommentActionLoading(false);
+  }
+
+  function isCommentEdited(comment) {
+    if (!comment?.updated_at || !comment?.created_at) return false;
+    return new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime();
   }
 
   return (
@@ -360,9 +564,25 @@ export default function ReportDetails() {
               <CardContent className="p-6">
         <h2 className="font-semibold mb-2">Description</h2>
 
-        <p className="text-gray-700">
-          {report.description}
-        </p>
+        <div className="text-gray-700 max-w-none">
+          <ReactMarkdown
+            components={{
+              p: ({ node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
+              ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 ml-2" {...props} />,
+              ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 ml-2" {...props} />,
+              li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+              h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 mt-3" {...props} />,
+              h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 mt-3" {...props} />,
+              h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-2 mt-2" {...props} />,
+              code: ({ node, ...props }) => <code className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono" {...props} />,
+              pre: ({ node, ...props }) => <pre className="bg-gray-100 p-3 rounded mb-2 overflow-x-auto" {...props} />,
+              blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-400 pl-3 italic text-gray-600 mb-2" {...props} />,
+              a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800" {...props} />,
+            }}
+          >
+            {report.description || "No description provided"}
+          </ReactMarkdown>
+        </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 text-sm">
 
@@ -565,11 +785,43 @@ export default function ReportDetails() {
             rows={4}
           />
 
+          {/* File Input and Preview for Public Reply */}
+          <div className="mt-3 border border-dashed border-gray-300 rounded p-3 bg-gray-50">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Attachments
+            </label>
+            <input
+              type="file"
+              multiple
+              onChange={handlePublicReplyAttachments}
+              className="block w-full text-sm text-gray-600 cursor-pointer"
+              disabled={uploadingAttachments}
+            />
+            {publicReplyAttachments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {publicReplyAttachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
+                    <span className="truncate">{file.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPublicReplyAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="h-6 px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <Button
             onClick={sendPublicReply}
+            disabled={uploadingAttachments || (!publicReply.trim() && publicReplyAttachments.length === 0)}
             className="mt-3"
           >
-            Send Response
+            {uploadingAttachments ? "Uploading..." : "Send Response"}
           </Button>
 
           {/* Display Previous Public Replies */}
@@ -584,12 +836,102 @@ export default function ReportDetails() {
                     </p>
                     <p className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
+                      {isCommentEdited(c) ? " (edited)" : ""}
                     </p>
                   </div>
 
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                    {c.message}
-                  </p>
+                  {editingCommentId === c.id ? (
+                    <>
+                      <Textarea
+                        value={editingMessage}
+                        onChange={(e) => setEditingMessage(e.target.value)}
+                        rows={3}
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          onClick={() => saveEditComment(c.id)}
+                          disabled={commentActionLoading || !editingMessage.trim()}
+                          className="h-8 px-3"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={cancelEditComment}
+                          disabled={commentActionLoading}
+                          className="h-8 px-3"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                        {c.message}
+                      </p>
+
+                      {/* Display Comment Attachments */}
+                      {c.attachments && c.attachments.length > 0 && (
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {c.attachments.map((att) => {
+                            const isImage = att.mime_type?.startsWith("image");
+                            return (
+                              <div key={att.id} className="border border-gray-300 rounded p-2 bg-white">
+                                {isImage ? (
+                                  <img
+                                    src={att.file_url}
+                                    alt={att.file_name}
+                                    onClick={() => setPreviewFile({
+                                      url: att.file_url,
+                                      name: att.file_name,
+                                      type: att.mime_type,
+                                    })}
+                                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80"
+                                  />
+                                ) : (
+                                  <div className="w-full h-20 bg-gray-100 flex items-center justify-center rounded">
+                                    <span className="text-gray-600 text-xs">📄</span>
+                                  </div>
+                                )}
+                                <p className="text-xs mt-1 text-gray-700 truncate">{att.file_name}</p>
+                                <a
+                                  href={att.file_url}
+                                  download={att.file_name}
+                                  className="text-blue-600 text-xs underline"
+                                >
+                                  Download
+                                </a>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {currentUserId && c.user_id === currentUserId && (
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-8 px-3"
+                            onClick={() => beginEditComment(c)}
+                            disabled={commentActionLoading}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            className="h-8 px-3"
+                            onClick={() => deleteOwnComment(c.id)}
+                            disabled={commentActionLoading}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
           </div>
@@ -606,12 +948,44 @@ export default function ReportDetails() {
             rows={4}
           />
 
+          {/* File Input and Preview for Internal Note */}
+          <div className="mt-3 border border-dashed border-gray-300 rounded p-3 bg-gray-50">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Attachments
+            </label>
+            <input
+              type="file"
+              multiple
+              onChange={handleInternalNoteAttachments}
+              className="block w-full text-sm text-gray-600 cursor-pointer"
+              disabled={uploadingAttachments}
+            />
+            {internalNoteAttachments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {internalNoteAttachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
+                    <span className="truncate">{file.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setInternalNoteAttachments(prev => prev.filter((_, i) => i !== idx))}
+                      className="h-6 px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <Button
             onClick={sendInternalNote}
+            disabled={uploadingAttachments || (!internalNote.trim() && internalNoteAttachments.length === 0)}
             variant="secondary"
             className="mt-3"
           >
-            Add Internal Note
+            {uploadingAttachments ? "Uploading..." : "Add Internal Note"}
           </Button>
 
           {/* Display Previous Internal Notes */}
@@ -626,12 +1000,102 @@ export default function ReportDetails() {
                     </p>
                     <p className="text-xs text-gray-500">
                       {new Date(c.created_at).toLocaleString()}
+                      {isCommentEdited(c) ? " (edited)" : ""}
                     </p>
                   </div>
 
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                    {c.message}
-                  </p>
+                  {editingCommentId === c.id ? (
+                    <>
+                      <Textarea
+                        value={editingMessage}
+                        onChange={(e) => setEditingMessage(e.target.value)}
+                        rows={3}
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          onClick={() => saveEditComment(c.id)}
+                          disabled={commentActionLoading || !editingMessage.trim()}
+                          className="h-8 px-3"
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={cancelEditComment}
+                          disabled={commentActionLoading}
+                          className="h-8 px-3"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                        {c.message}
+                      </p>
+
+                      {/* Display Comment Attachments */}
+                      {c.attachments && c.attachments.length > 0 && (
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {c.attachments.map((att) => {
+                            const isImage = att.mime_type?.startsWith("image");
+                            return (
+                              <div key={att.id} className="border border-gray-300 rounded p-2 bg-white">
+                                {isImage ? (
+                                  <img
+                                    src={att.file_url}
+                                    alt={att.file_name}
+                                    onClick={() => setPreviewFile({
+                                      url: att.file_url,
+                                      name: att.file_name,
+                                      type: att.mime_type,
+                                    })}
+                                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80"
+                                  />
+                                ) : (
+                                  <div className="w-full h-20 bg-gray-100 flex items-center justify-center rounded">
+                                    <span className="text-gray-600 text-xs">📄</span>
+                                  </div>
+                                )}
+                                <p className="text-xs mt-1 text-gray-700 truncate">{att.file_name}</p>
+                                <a
+                                  href={att.file_url}
+                                  download={att.file_name}
+                                  className="text-blue-600 text-xs underline"
+                                >
+                                  Download
+                                </a>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {currentUserId && c.user_id === currentUserId && (
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-8 px-3"
+                            onClick={() => beginEditComment(c)}
+                            disabled={commentActionLoading}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            className="h-8 px-3"
+                            onClick={() => deleteOwnComment(c.id)}
+                            disabled={commentActionLoading}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
           </div>
@@ -641,25 +1105,29 @@ export default function ReportDetails() {
       </CardContent>
       </Card>
 
-       {/* EDIT BUTTON */}
-      <Button
-        className="mt-6 w-full"
-        onClick={() => navigate(`/report/${id}/edit`)}
-      >
-        Edit Report
-      </Button>
-      <Button
-        variant="destructive"
-        className="mt-6 w-full"
-        onClick={async () => {
-          if (confirm("Delete this report?")) {
-            await deleteReport(report);
-            navigate("/");
-          }
-        }}        
-      >
-        Delete
-      </Button>
+      {/* EDIT/DELETE (manager or report owner only) */}
+      {canManageReport && (
+        <>
+          <Button
+            className="mt-6 w-full"
+            onClick={() => navigate(`/report/${id}/edit`)}
+          >
+            Edit Report
+          </Button>
+          <Button
+            variant="destructive"
+            className="mt-6 w-full"
+            onClick={async () => {
+              if (confirm("Delete this report?")) {
+                await deleteReport(report);
+                navigate("/");
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </>
+      )}
 
       {/* Delete Button */}
       {/* <button

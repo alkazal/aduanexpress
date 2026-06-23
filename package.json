@@ -32,6 +32,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.6",
     "recharts": "^3.4.1",
     "shadcn": "^4.10.0",
