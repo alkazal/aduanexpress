@@ -475,7 +475,7 @@ export default function TechnicianDashboard() {
             </Select>
           </div>  
 
-            <div className="w-full sm:flex-1">
+            <div className="hidden sm:block w-full sm:flex-1">
               <Input
                 type="text"
                 placeholder="Search ticket, title, project, status..."
@@ -489,7 +489,7 @@ export default function TechnicianDashboard() {
               onClick={clearFilters}
               disabled={!hasActiveFilters}
               variant="outline"
-              className="h-10"
+              className="hidden sm:flex h-10"
             >
               Clear Filters
             </Button>
@@ -529,7 +529,7 @@ export default function TechnicianDashboard() {
           >
             <span className="flex items-center gap-2 text-sm">
               <CalendarRange className="h-4 w-4" />
-              {hasDateFilters ? "Date range applied" : "Filter by date"}
+              {hasActiveFilters ? "Filters applied" : "Search & Filter"}
             </span>
             <ChevronDown
               className={`h-4 w-4 transition-transform ${
@@ -540,6 +540,18 @@ export default function TechnicianDashboard() {
 
           {isMobileDateFiltersOpen && (
             <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">
+                  Search
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="Search ticket, title, project, status..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
               <div className="w-full">
                 <Label className="text-xs font-semibold text-gray-700 mb-1">
                   Start Date
@@ -563,6 +575,16 @@ export default function TechnicianDashboard() {
                   aria-label="End date"
                 />
               </div>
+
+              <Button
+                type="button"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                variant="outline"
+                className="w-full h-10"
+              >
+                Clear Filters
+              </Button>
             </div>
           )}
         </div>
