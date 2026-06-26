@@ -285,6 +285,16 @@ export default function ReportDetails() {
   // FINAL SORT
   timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
+  function isImageFile(att) {
+    const mime = (att?.mime_type || "").toLowerCase();
+    const name = (att?.file_name || "").toLowerCase();
+    return mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(name);
+  }
+
+  function getAttachmentUrl(att) {
+    return att?.file_url || "";
+  }
+
   async function handlePublicReplyAttachments(e) {
     const files = Array.from(e.target.files || []);
     setPublicReplyAttachments(prev => [...prev, ...files]);
@@ -324,12 +334,12 @@ export default function ReportDetails() {
     for (const file of publicReplyAttachments) {
       const fileName = `${Date.now()}_${file.name}`;
       const { error: uploadError, data: uploadData } = await supabase.storage
-        .from("report-attachments")
+        .from("attachments")
         .upload(`comment/${data.id}/${fileName}`, file);
 
       if (!uploadError && uploadData) {
         const { data: { publicUrl } } = supabase.storage
-          .from("report-attachments")
+          .from("attachments")
           .getPublicUrl(`comment/${data.id}/${fileName}`);
 
         const { error: attachError, data: attachData } = await supabase
@@ -348,6 +358,8 @@ export default function ReportDetails() {
         if (!attachError && attachData) {
           uploadedAttachments.push(attachData);
         }
+      } else if (uploadError) {
+        console.error("Error uploading public reply attachment:", uploadError);
       }
     }
 
@@ -397,12 +409,12 @@ export default function ReportDetails() {
     for (const file of internalNoteAttachments) {
       const fileName = `${Date.now()}_${file.name}`;
       const { error: uploadError, data: uploadData } = await supabase.storage
-        .from("report-attachments")
+        .from("attachments")
         .upload(`comment/${data.id}/${fileName}`, file);
 
       if (!uploadError && uploadData) {
         const { data: { publicUrl } } = supabase.storage
-          .from("report-attachments")
+          .from("attachments")
           .getPublicUrl(`comment/${data.id}/${fileName}`);
 
         const { error: attachError, data: attachData } = await supabase
@@ -421,6 +433,8 @@ export default function ReportDetails() {
         if (!attachError && attachData) {
           uploadedAttachments.push(attachData);
         }
+      } else if (uploadError) {
+        console.error("Error uploading internal note attachment:", uploadError);
       }
     }
 
@@ -649,7 +663,7 @@ export default function ReportDetails() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {attachments.map((att) => {
-          const isImage = att.mime_type?.startsWith("image");
+          const isImage = isImageFile(att);
           //const isImg = att.mime_type?.startsWith("image/");
           // const url =
           //   att.file_url ||
@@ -875,15 +889,16 @@ export default function ReportDetails() {
                       {c.attachments && c.attachments.length > 0 && (
                         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {c.attachments.map((att) => {
-                            const isImage = att.mime_type?.startsWith("image");
+                            const isImage = isImageFile(att);
+                            const fileUrl = getAttachmentUrl(att);
                             return (
                               <div key={att.id} className="border border-gray-300 rounded p-2 bg-white">
                                 {isImage ? (
                                   <img
-                                    src={att.file_url}
+                                    src={fileUrl}
                                     alt={att.file_name}
                                     onClick={() => setPreviewFile({
-                                      url: att.file_url,
+                                      url: fileUrl,
                                       name: att.file_name,
                                       type: att.mime_type,
                                     })}
@@ -895,13 +910,30 @@ export default function ReportDetails() {
                                   </div>
                                 )}
                                 <p className="text-xs mt-1 text-gray-700 truncate">{att.file_name}</p>
-                                <a
-                                  href={att.file_url}
-                                  download={att.file_name}
-                                  className="text-blue-600 text-xs underline"
-                                >
-                                  Download
-                                </a>
+                                <div className="mt-1 flex gap-2">
+                                  <Button
+                                    variant="link"
+                                    className="h-auto p-0 text-xs"
+                                    onClick={() =>
+                                      fileUrl &&
+                                      setPreviewFile({
+                                        url: fileUrl,
+                                        name: att.file_name,
+                                        type: att.mime_type,
+                                      })
+                                    }
+                                    disabled={!fileUrl}
+                                  >
+                                    View
+                                  </Button>
+                                  <a
+                                    href={fileUrl}
+                                    download={att.file_name}
+                                    className="text-blue-600 text-xs underline"
+                                  >
+                                    Download
+                                  </a>
+                                </div>
                               </div>
                             );
                           })}
@@ -1039,15 +1071,16 @@ export default function ReportDetails() {
                       {c.attachments && c.attachments.length > 0 && (
                         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {c.attachments.map((att) => {
-                            const isImage = att.mime_type?.startsWith("image");
+                            const isImage = isImageFile(att);
+                            const fileUrl = getAttachmentUrl(att);
                             return (
                               <div key={att.id} className="border border-gray-300 rounded p-2 bg-white">
                                 {isImage ? (
                                   <img
-                                    src={att.file_url}
+                                    src={fileUrl}
                                     alt={att.file_name}
                                     onClick={() => setPreviewFile({
-                                      url: att.file_url,
+                                      url: fileUrl,
                                       name: att.file_name,
                                       type: att.mime_type,
                                     })}
@@ -1059,13 +1092,30 @@ export default function ReportDetails() {
                                   </div>
                                 )}
                                 <p className="text-xs mt-1 text-gray-700 truncate">{att.file_name}</p>
-                                <a
-                                  href={att.file_url}
-                                  download={att.file_name}
-                                  className="text-blue-600 text-xs underline"
-                                >
-                                  Download
-                                </a>
+                                <div className="mt-1 flex gap-2">
+                                  <Button
+                                    variant="link"
+                                    className="h-auto p-0 text-xs"
+                                    onClick={() =>
+                                      fileUrl &&
+                                      setPreviewFile({
+                                        url: fileUrl,
+                                        name: att.file_name,
+                                        type: att.mime_type,
+                                      })
+                                    }
+                                    disabled={!fileUrl}
+                                  >
+                                    View
+                                  </Button>
+                                  <a
+                                    href={fileUrl}
+                                    download={att.file_name}
+                                    className="text-blue-600 text-xs underline"
+                                  >
+                                    Download
+                                  </a>
+                                </div>
                               </div>
                             );
                           })}
