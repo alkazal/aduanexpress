@@ -9,9 +9,11 @@ import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
 import StatusBadge from "../components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Inbox, Clock, AlertCircle, CheckCircle, CalendarRange, ChevronDown } from "lucide-react";
 
 export default function MySubmissions() {
   const [items, setItems] = useState([]);
@@ -24,6 +26,7 @@ export default function MySubmissions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
+  const [isMobileDateFiltersOpen, setIsMobileDateFiltersOpen] = useState(false);
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
   
@@ -141,6 +144,12 @@ export default function MySubmissions() {
     setCurrentPage(1);
   }, [selectedProject, startDate, endDate, selectedStatus, searchTerm]);
 
+  useEffect(() => {
+    if (startDate || endDate) {
+      setIsMobileDateFiltersOpen(true);
+    }
+  }, [startDate, endDate]);
+
   const projectOptions = Array.from(
     new Map(
       items
@@ -206,17 +215,18 @@ export default function MySubmissions() {
   const resolvedReports = baseFilteredItems.filter((r) => r.status === "Resolved").length;
 
   return (
-    <div className="p-6">
+    <div>
       <div
-        className={`sticky top-0 z-20 -mx-6 px-6 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+        className={`sticky top-16 z-20 mx-0 px-0 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
           isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
         } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold">Reports</h1>
-          <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full max-w-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
 
             <div className="w-full sm:flex-1">
+              <Label className="text-xs font-semibold text-gray-700 mb-1">Project</Label>
               <Select
                 className="w-full"
                 value={selectedProject}
@@ -231,7 +241,7 @@ export default function MySubmissions() {
               </Select>
             </div>
 
-            <div className="w-full sm:flex-1">
+            <div className="hidden sm:block w-full sm:flex-1">
               <Input
                 type="text"
                 placeholder="Search ticket, title, project, status..."
@@ -245,13 +255,13 @@ export default function MySubmissions() {
               onClick={clearFilters}
               disabled={!hasActiveFilters}
               variant="outline"
-              className="h-10"
+              className="hidden sm:flex h-10"
             >
               Clear Filters
             </Button>
 
-            <div className="w-full sm:w-auto flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 mb-1">Start Date</label>
+            <div className="hidden sm:block w-full sm:w-auto">
+              <Label className="text-xs font-semibold text-gray-700 mb-1">Start Date</Label>
               <Input
                 type="date"
                 value={startDate}
@@ -260,8 +270,8 @@ export default function MySubmissions() {
               />
             </div>
 
-            <div className="w-full sm:w-auto flex flex-col">
-              <label className="text-xs font-semibold text-gray-700 mb-1">End Date</label>
+            <div className="hidden sm:block w-full sm:w-auto">
+              <Label className="text-xs font-semibold text-gray-700 mb-1">End Date</Label>
               <Input
                 type="date"
                 value={endDate}
@@ -270,6 +280,67 @@ export default function MySubmissions() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Mobile collapsible Search & Filter panel */}
+        <div className="mt-3 sm:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsMobileDateFiltersOpen((open) => !open)}
+            className="w-full h-10 justify-between"
+          >
+            <span className="flex items-center gap-2 text-sm">
+              <CalendarRange className="h-4 w-4" />
+              {hasActiveFilters ? "Filters applied" : "Search & Filter"}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${
+                isMobileDateFiltersOpen ? "rotate-180" : ""
+              }`}
+            />
+          </Button>
+
+          {isMobileDateFiltersOpen && (
+            <div className="mt-2 grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">Search</Label>
+                <Input
+                  type="text"
+                  placeholder="Search ticket, title, project, status..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">Start Date</Label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  aria-label="Start date"
+                />
+              </div>
+              <div className="w-full">
+                <Label className="text-xs font-semibold text-gray-700 mb-1">End Date</Label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  aria-label="End date"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                variant="outline"
+                className="w-full h-10"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex items-center gap-2 overflow-x-auto sm:hidden">
@@ -324,53 +395,69 @@ export default function MySubmissions() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {/* Total */}
+      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
             selectedStatus === "" ? "ring-2 ring-blue-500" : ""
           }`}
         >
-          <CardContent className="p-4">
-            <p className="text-gray-500 text-sm">Total Reports</p>
-            <p className="text-2xl font-bold">{totalReports}</p>
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Total Reports</p>
+              <p className="text-3xl font-bold text-gray-700">{totalReports}</p>
+            </div>
+            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Inbox className="h-6 w-6 text-blue-600" />
+            </div>
           </CardContent>
         </Card>
-        {/* Open */}
         <Card
           onClick={() => setSelectedStatus("Open")}
           className={`cursor-pointer hover:bg-gray-50 ${
             selectedStatus === "Open" ? "ring-2 ring-yellow-500" : ""
           }`}
         >
-          <CardContent className="p-4">
-            <p className="text-gray-500 text-sm">Open</p>
-            <p className="text-2xl font-bold text-yellow-600">{openReports}</p>
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Open</p>
+              <p className="text-3xl font-bold text-gray-700">{openReports}</p>
+            </div>
+            <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-purple-600" />
+            </div>
           </CardContent>
         </Card>
-        {/* Pending */}
         <Card
           onClick={() => setSelectedStatus("Pending")}
           className={`cursor-pointer hover:bg-gray-50 ${
             selectedStatus === "Pending" ? "ring-2 ring-orange-500" : ""
           }`}
         >
-          <CardContent className="p-4">
-            <p className="text-gray-500 text-sm">Pending</p>
-            <p className="text-2xl font-bold text-orange-600">{pendingReports}</p>
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-3xl font-bold text-red-600">{pendingReports}</p>
+            </div>
+            <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
           </CardContent>
         </Card>
-        {/* Resolved */}
         <Card
           onClick={() => setSelectedStatus("Resolved")}
           className={`cursor-pointer hover:bg-gray-50 ${
             selectedStatus === "Resolved" ? "ring-2 ring-green-500" : ""
           }`}
         >
-          <CardContent className="p-4">
-            <p className="text-gray-500 text-sm">Resolved</p>
-            <p className="text-2xl font-bold text-green-600">{resolvedReports}</p>
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Resolved</p>
+              <p className="text-3xl font-bold text-green-600">{resolvedReports}</p>
+            </div>
+            <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -399,23 +486,23 @@ export default function MySubmissions() {
             <Card
               key={x.id}
               onClick={() => navigate(`/report/${x.id}`)}
-              className="cursor-pointer border border-gray-100"
+              className="cursor-pointer border border-gray-100 w-full overflow-hidden"
             >
-              <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500">Ticket #{x.ticket_no}</p>
-                  <h3 className="font-semibold text-gray-900 truncate">{x.title}</h3>
+              <CardContent className="p-3">
+                <div className="min-w-0 w-full overflow-hidden">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[11px] text-gray-500 truncate">Ticket #{x.ticket_no}</p>
+                    <StatusBadge status={x.status} className="flex-shrink-0" />
+                  </div>
+                  <h3 className="mt-1 text-sm font-semibold text-gray-900 break-words line-clamp-2">{x.title}</h3>
                 </div>
-                <StatusBadge status={x.status} />
-              </div>
 
-              <div className="mt-2 text-xs text-gray-600 space-y-1">
-                <p>Submitted by: {x.submitted_by || "-"}</p>
-                <p>Project: {x.project_name || "-"}</p>
-                <p>Assigned to: {x.assigned_to || "-"}</p>
-                <p>Created: {new Date(x.created_at).toLocaleDateString()}</p>
-              </div>
+                <div className="mt-2 text-[11px] text-gray-600 space-y-0.5">
+                  <p className="truncate">Submitted by: {x.submitted_by || "-"}</p>
+                  <p className="truncate">Project: {x.project_name || "-"}</p>
+                  <p className="truncate">Assigned to: {x.assigned_to || "-"}</p>
+                  <p>Created: {new Date(x.created_at).toLocaleDateString()}</p>
+                </div>
               </CardContent>
             </Card>
           ))}

@@ -13,6 +13,7 @@ import { AlertCircle, CheckCircle, FileText, FolderOpen, Lock } from 'lucide-rea
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -28,6 +29,7 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
   const [selectedProject, setSelectedProject] = useState("");
+  const [showCharts, setShowCharts] = useState(false);
   const navigate = useNavigate();
 
 
@@ -211,7 +213,39 @@ const projectChartData = Object.values(
       {syncStatus === "syncing" && (
         <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
       )}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Mobile: compact single summary card */}
+      <div className="sm:hidden mb-4">
+        <Card className="border border-border bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-muted-foreground">Reports Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-5 divide-x text-center pb-4">
+            <div className="px-1">
+              <p className="text-xl font-bold">{totalReports}</p>
+              <p className="text-xs text-muted-foreground leading-tight">Total</p>
+            </div>
+            <div className="px-1">
+              <p className="text-xl font-bold text-blue-600">{statusCounts.OPEN}</p>
+              <p className="text-xs text-muted-foreground leading-tight">Open</p>
+            </div>
+            <div className="px-1">
+              <p className="text-xl font-bold text-amber-600">{statusCounts.PENDING}</p>
+              <p className="text-xs text-muted-foreground leading-tight">Pending</p>
+            </div>
+            <div className="px-1">
+              <p className="text-xl font-bold text-emerald-600">{statusCounts.RESOLVED}</p>
+              <p className="text-xs text-muted-foreground leading-tight">Resolved</p>
+            </div>
+            <div className="px-1">
+              <p className="text-xl font-bold text-gray-600">{statusCounts.CLOSED}</p>
+              <p className="text-xs text-muted-foreground leading-tight">Closed</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Desktop: 5 individual KPI cards */}
+      <div className="mb-6 hidden sm:grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card className="border border-border bg-card bg-gradient-to-tr from-gray-100 to-white">
           <CardHeader>
             <CardDescription className="flex w-full items-center justify-between gap-2">
@@ -354,55 +388,74 @@ const projectChartData = Object.values(
 
       </div> */}
 
-      <Suspense
-        fallback={
-          <div className="mb-6 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground shadow">
-            Loading charts...
-          </div>
-        }
-      >
-        <HomeCharts
-          chartData={chartData}
-          statusChartData={statusChartData}
-          projectChartData={projectChartData}
-        />
-      </Suspense>
+      {/* Mobile: Recent Reports first, Charts below (collapsible) */}
+      {/* Desktop: Charts first, Recent Reports below */}
+      <div className="flex flex-col">
 
-      {/* Recent Reports */}
-      <div>
-        <h2 className="text-xl font-semibold mb-3">Recent Reports</h2>
-        {loading ? (
-          <p>Loading...</p>
-        ) : recentReports.length === 0 ? (
-          <p className="text-gray-500">No reports yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentReports.map((r) => (
-              <div 
+        {/* Recent Reports — first on mobile, second on desktop */}
+        <div className="order-1 sm:order-2 mb-6">
+          <h2 className="text-xl font-semibold mb-3">Recent Reports</h2>
+          {loading ? (
+            <p>Loading...</p>
+          ) : recentReports.length === 0 ? (
+            <p className="text-gray-500">No reports yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentReports.map((r) => (
+                <div
                   key={r.id}
                   onClick={() => navigate(`/report/${r.id}`)}
                   className="bg-white shadow rounded-lg p-4 cursor-pointer hover:bg-bg-primary"
                 >
-                {r.attachment_url && (
-                  <img
-                    src={r.attachment_url}
-                    alt="Attachment"
-                    className="w-full h-32 object-cover rounded mb-2"
-                  />
-                )}
-                <p className="font-semibold">{r.title}</p>
-                <p className="text-gray-600 text-sm">{r.report_type}</p>                
-                {r.project_name && (
-                  <p className="text-gray-500 text-sm">Project: {r.project_name}</p>
-                )}
-                <p className="text-xs text-gray-400">
-                  {new Date(r.created_at).toLocaleString()}
-                </p>
-                {!r.synced && <p className="text-red-500 text-xs mt-1">Offline</p>}
-              </div>
-            ))}
+                  {r.attachment_url && (
+                    <img
+                      src={r.attachment_url}
+                      alt="Attachment"
+                      className="w-full h-32 object-cover rounded mb-2"
+                    />
+                  )}
+                  <p className="font-semibold">{r.title}</p>
+                  <p className="text-gray-600 text-sm">{r.report_type}</p>
+                  {r.project_name && (
+                    <p className="text-gray-500 text-sm">Project: {r.project_name}</p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    {new Date(r.created_at).toLocaleString()}
+                  </p>
+                  {!r.synced && <p className="text-red-500 text-xs mt-1">Offline</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Charts — second on mobile (collapsible), first on desktop */}
+        <div className="order-2 sm:order-1">
+          <button
+            className="sm:hidden w-full flex items-center justify-between mb-3 text-sm font-medium text-gray-700 border border-border rounded-lg px-4 py-2 bg-white"
+            onClick={() => setShowCharts(p => !p)}
+          >
+            <span>Charts &amp; Analytics</span>
+            <span>{showCharts ? "▲ Hide" : "▼ Show"}</span>
+          </button>
+
+          <div className={showCharts ? "block" : "hidden sm:block"}>
+            <Suspense
+              fallback={
+                <div className="mb-6 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground shadow">
+                  Loading charts...
+                </div>
+              }
+            >
+              <HomeCharts
+                chartData={chartData}
+                statusChartData={statusChartData}
+                projectChartData={projectChartData}
+              />
+            </Suspense>
           </div>
-        )}
+        </div>
+
       </div>
 
       <Button

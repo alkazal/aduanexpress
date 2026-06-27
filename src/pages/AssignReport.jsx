@@ -268,6 +268,7 @@ export default function AssignReport() {
 
               <div className="flex flex-col sm:flex-row gap-2">
                 <Select
+                  className="sm:w-40 shrink-0"
                   value={selectedLevel[r.id] || ""}
                   onChange={(e) =>
                     setSelectedLevel({
@@ -276,7 +277,7 @@ export default function AssignReport() {
                     })
                   }
                 >
-                  <option value="">Maintenance Level</option>
+                  <option value="">Maint. Level</option>
                   <option value="1">Level 1</option>
                   <option value="2">Level 2</option>
                   <option value="3">Level 3</option>

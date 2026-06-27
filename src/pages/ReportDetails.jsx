@@ -502,14 +502,22 @@ export default function ReportDetails() {
 
     setCommentActionLoading(true);
 
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from("report_comments")
-      .delete()
+      .delete({ count: "exact" })
       .eq("id", commentId)
       .eq("user_id", currentUserId);
 
     if (error) {
       console.error("Error deleting comment:", error);
+      alert("Failed to delete: " + error.message);
+      setCommentActionLoading(false);
+      return;
+    }
+
+    if (count === 0) {
+      console.error("Delete was blocked — check Supabase RLS policies for report_comments.");
+      alert("Could not delete the post. You may not have permission.");
       setCommentActionLoading(false);
       return;
     }
