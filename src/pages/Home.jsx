@@ -29,7 +29,7 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
   const [selectedProject, setSelectedProject] = useState("");
-  const [showCharts, setShowCharts] = useState(false);
+  const [showCharts, setShowCharts] = useState(true);
   const navigate = useNavigate();
 
 
@@ -388,6 +388,33 @@ const projectChartData = Object.values(
 
       </div> */}
 
+      {/* Charts — second on mobile (collapsible), first on desktop */}
+        <div className="order-2 sm:order-1">
+          <button
+            className="sm:hidden w-full flex items-center justify-between mb-3 text-sm font-medium text-gray-700 border border-border rounded-lg px-4 py-2 bg-white"
+            onClick={() => setShowCharts(p => !p)}
+          >
+            <span>Charts &amp; Analytics</span>
+            <span>{showCharts ? "▲ Hide" : "▼ Show"}</span>
+          </button>
+
+          <div className={showCharts ? "block" : "hidden sm:block"}>
+            <Suspense
+              fallback={
+                <div className="mb-6 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground shadow">
+                  Loading charts...
+                </div>
+              }
+            >
+              <HomeCharts
+                chartData={chartData}
+                statusChartData={statusChartData}
+                projectChartData={projectChartData}
+              />
+            </Suspense>
+          </div>
+        </div>
+
       {/* Mobile: Recent Reports first, Charts below (collapsible) */}
       {/* Desktop: Charts first, Recent Reports below */}
       <div className="flex flex-col">
@@ -429,32 +456,7 @@ const projectChartData = Object.values(
           )}
         </div>
 
-        {/* Charts — second on mobile (collapsible), first on desktop */}
-        <div className="order-2 sm:order-1">
-          <button
-            className="sm:hidden w-full flex items-center justify-between mb-3 text-sm font-medium text-gray-700 border border-border rounded-lg px-4 py-2 bg-white"
-            onClick={() => setShowCharts(p => !p)}
-          >
-            <span>Charts &amp; Analytics</span>
-            <span>{showCharts ? "▲ Hide" : "▼ Show"}</span>
-          </button>
-
-          <div className={showCharts ? "block" : "hidden sm:block"}>
-            <Suspense
-              fallback={
-                <div className="mb-6 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground shadow">
-                  Loading charts...
-                </div>
-              }
-            >
-              <HomeCharts
-                chartData={chartData}
-                statusChartData={statusChartData}
-                projectChartData={projectChartData}
-              />
-            </Suspense>
-          </div>
-        </div>
+        
 
       </div>
 
