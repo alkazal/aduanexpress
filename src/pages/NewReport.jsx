@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
@@ -22,12 +22,90 @@ export default function NewReport() {
   const [description, setDescription] = useState("");
   const [requestorName, setRequestorName] = useState("");
   const [requestorPhoneNo, setRequestorPhoneNo] = useState("");
-  const [requestDatetime, setRequestDatetime] = useState("");
+  const [requestDatetime, setRequestDatetime] = useState(
+    () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  );
   const [attachments, setAttachments] = useState([]); // multiple files
   const [error, setError] = useState(null);
   const [progressMap, setProgressMap] = useState({});
   const [compressing, setCompressing] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [requestorSuggestions, setRequestorSuggestions] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const nameWrapperRef = useRef(null);
+
+  useEffect(() => {
+    // Close suggestions on outside click
+    function handleClickOutside(e) {
+      if (nameWrapperRef.current && !nameWrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function loadRequestors() {
+      // Load from local Dexie first
+      const localReports = await db.reports.toArray();
+      const mergedMap = new Map();
+      for (const r of localReports) {
+        if (r.requestor_name) {
+          const key = r.requestor_name.toLowerCase();
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, { name: r.requestor_name, phone_no: r.requestor_phone_no || "" });
+          }
+        }
+      }
+      if (active) setRequestorSuggestions([...mergedMap.values()]);
+
+      // Merge with Supabase if online
+      if (navigator.onLine) {
+        const { data } = await supabase
+          .from("reports")
+          .select("requestor_name, requestor_phone_no")
+          .not("requestor_name", "is", null);
+        if (active && data) {
+          for (const r of data) {
+            if (r.requestor_name) {
+              const key = r.requestor_name.toLowerCase();
+              if (!mergedMap.has(key)) {
+                mergedMap.set(key, { name: r.requestor_name, phone_no: r.requestor_phone_no || "" });
+              }
+            }
+          }
+          if (active) setRequestorSuggestions([...mergedMap.values()]);
+        }
+      }
+    }
+    loadRequestors();
+    return () => { active = false; };
+  }, []);
+
+  function handleRequestorNameChange(e) {
+    const value = e.target.value;
+    setRequestorName(value);
+    if (value.trim().length === 0) {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const lower = value.toLowerCase();
+    const filtered = requestorSuggestions.filter((r) =>
+      r.name.toLowerCase().includes(lower)
+    );
+    setFilteredSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }
+
+  function handleSelectRequestor(r) {
+    setRequestorName(r.name);
+    setRequestorPhoneNo(r.phone_no);
+    setShowSuggestions(false);
+  }
 
   useEffect(() => {
     let active = true;
@@ -247,12 +325,36 @@ return (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="requestor-name">Requestor Name</Label>
-                  <Input
-                    id="requestor-name"
-                    value={requestorName}
-                    onChange={(e) => setRequestorName(e.target.value)}
-                    required
-                  />
+                  <div ref={nameWrapperRef} className="relative">
+                    <Input
+                      id="requestor-name"
+                      value={requestorName}
+                      onChange={handleRequestorNameChange}
+                      onFocus={() => {
+                        if (requestorName.trim() && filteredSuggestions.length > 0)
+                          setShowSuggestions(true);
+                      }}
+                      autoComplete="off"
+                      placeholder="Type to search or enter new name"
+                      required
+                    />
+                    {showSuggestions && filteredSuggestions.length > 0 && (
+                      <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {filteredSuggestions.map((r, i) => (
+                          <li
+                            key={i}
+                            onMouseDown={() => handleSelectRequestor(r)}
+                            className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                          >
+                            <span className="font-medium">{r.name}</span>
+                            {r.phone_no && (
+                              <span className="text-gray-400 text-xs ml-2">{r.phone_no}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -262,6 +364,7 @@ return (
                     type="tel"
                     value={requestorPhoneNo}
                     onChange={(e) => setRequestorPhoneNo(e.target.value)}
+                    placeholder="Auto-filled when name is selected"
                     required
                   />
                 </div>
