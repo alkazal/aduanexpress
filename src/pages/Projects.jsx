@@ -230,7 +230,7 @@ export default function Projects() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-2 px-2 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Projects</h1>
         <p className="text-sm text-gray-500">Manager-only project administration</p>

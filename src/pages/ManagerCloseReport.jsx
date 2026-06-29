@@ -158,7 +158,7 @@ export default function ManagerCloseReport() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-2 px-2 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold">Close Reports</h1>

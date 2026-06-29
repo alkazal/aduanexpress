@@ -240,7 +240,7 @@ export default function NewReport() {
   };
 
 return (
-    <div className="p-6 w-full min-h-screen bg-gray-100">
+    <div className="p-2 px-2 w-full min-h-screen bg-gray-100">
       <div className="max-w-4xl w-full mx-auto">
         <div className="mb-6">
           <Button
@@ -378,6 +378,7 @@ return (
                   value={requestDatetime}
                   onChange={(e) => setRequestDatetime(e.target.value)}
                   required
+                  className="w-full text-left block"
                 />
               </div>
 

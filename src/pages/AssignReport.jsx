@@ -222,7 +222,7 @@ export default function AssignReport() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-2 px-2 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold">Assign Reports</h1>
@@ -254,7 +254,7 @@ export default function AssignReport() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground line-clamp-2">
+              <p className="text-sm text-muted-foreground line-clamp-5">
                 {r.description}
               </p>
 

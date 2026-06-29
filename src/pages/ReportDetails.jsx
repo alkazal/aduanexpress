@@ -217,7 +217,7 @@ export default function ReportDetails() {
   }
   if (!report)
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-2 px-2 max-w-4xl mx-auto">
         <Alert className="border-red-200 bg-red-50 text-red-700">
           <AlertDescription>Report not found</AlertDescription>
         </Alert>
@@ -537,7 +537,7 @@ export default function ReportDetails() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="p-2 px-2 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
 
       <Button

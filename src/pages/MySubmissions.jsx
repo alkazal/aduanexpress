@@ -217,8 +217,8 @@ export default function MySubmissions() {
   return (
     <div>
       <div
-        className={`sticky top-16 z-20 mx-0 px-0 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
-          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-4 pb-3"
+        className={`sticky top-16 z-20 mx-0 px-2 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-2 pb-3"
         } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
