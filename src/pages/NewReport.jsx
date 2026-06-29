@@ -372,14 +372,16 @@ return (
 
               <div className="space-y-2">
                 <Label htmlFor="request-datetime">Datetime Request</Label>
-                <Input
-                  id="request-datetime"
-                  type="datetime-local"
-                  value={requestDatetime}
-                  onChange={(e) => setRequestDatetime(e.target.value)}
-                  required
-                  className="w-full text-left block"
-                />
+                <div className="w-full overflow-hidden">
+                  <Input
+                    id="request-datetime"
+                    type="datetime-local"
+                    value={requestDatetime}
+                    onChange={(e) => setRequestDatetime(e.target.value)}
+                    required
+                    className="w-full min-w-0 text-left"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
