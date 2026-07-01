@@ -324,7 +324,7 @@ return (
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="requestor-name">Requestor Name</Label>
+                  <Label htmlFor="requestor-name">Reporter Name</Label>
                   <div ref={nameWrapperRef} className="relative">
                     <Input
                       id="requestor-name"
@@ -358,7 +358,7 @@ return (
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="requestor-phone">Requestor Phone No</Label>
+                  <Label htmlFor="requestor-phone">Reporter Phone No</Label>
                   <Input
                     id="requestor-phone"
                     type="tel"
@@ -371,7 +371,7 @@ return (
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="request-datetime">Datetime Request</Label>
+                <Label htmlFor="request-datetime">Datetime Reported</Label>
                 <div className="w-full overflow-hidden">
                   <Input
                     id="request-datetime"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
@@ -10,6 +10,8 @@ import { Select } from "../components/ui/select";
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isFirstSetup = searchParams.get("firstSetup") === "true";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
@@ -139,17 +141,23 @@ export default function EditProfile() {
     }
 
     const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
-    localStorage.setItem(
-      "appUser",
-      JSON.stringify({
-        ...cachedUser,
-        full_name: fullName.trim(),
-        ...(isManager ? { role: role || cachedUser.role || "user" } : {})
-      })
-    );
+    const updatedUser = {
+      ...cachedUser,
+      full_name: fullName.trim(),
+      ...(isManager ? { role: role || cachedUser.role || "user" } : {})
+    };
+    localStorage.setItem("appUser", JSON.stringify(updatedUser));
+
+    const redirectPath = updatedUser.role === "technician" ? "/technician" : "/";
+
+    if (isFirstSetup) {
+      navigate(redirectPath, { replace: true });
+      return;
+    }
 
     setStatus("Profile updated successfully.");
     setSaving(false);
+    setTimeout(() => navigate(redirectPath, { replace: true }), 1000);
   };
 
   if (loading) {
@@ -166,9 +174,11 @@ export default function EditProfile() {
     <div className="p-6 w-full min-h-screen bg-gray-100">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold">Edit Profile</h1>
+          <h1 className="text-2xl font-bold">{isFirstSetup ? "Complete Your Profile" : "Edit Profile"}</h1>
           <p className="text-gray-500 text-sm">
-            Update your personal information 
+            {isFirstSetup
+              ? "Please fill in your details before continuing."
+              : "Update your personal information"}
           </p>
         </div>
       </div>

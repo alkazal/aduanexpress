@@ -55,7 +55,7 @@ export default function ProtectedRoute({ children, requireProfileComplete = true
 
   if (!session) return <Navigate to="/login" replace />;
   if (requireProfileComplete && !profileComplete) {
-    return <Navigate to="/profile" replace />;
+    return <Navigate to="/profile?firstSetup=true" replace />;
   }
   return children;
 }
