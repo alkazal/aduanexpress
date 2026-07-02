@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -6,17 +6,20 @@ export default function ProtectedRoute({ children, requireProfileComplete = true
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [profileComplete, setProfileComplete] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     let active = true;
 
-    async function loadSessionAndProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
+    async function loadSessionAndProfile(existingSession) {
+      setLoading(true);
+      const session = existingSession || (await supabase.auth.getSession()).data.session;
       if (!active) return;
 
       setSession(session);
 
       if (!session?.user) {
+        setProfileComplete(true);
         setLoading(false);
         return;
       }
@@ -44,12 +47,15 @@ export default function ProtectedRoute({ children, requireProfileComplete = true
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setSession(session);
+        loadSessionAndProfile(session);
       }
     );
 
-    return () => listener.subscription.unsubscribe();
-  }, []);
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [location.pathname]);
 
   if (loading) return null; // or loading spinner
 
