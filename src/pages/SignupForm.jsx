@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Field,
   FieldDescription,
@@ -178,11 +179,6 @@ export function SignupForm({
                  Login here
                 </Link>
               </FieldDescription>
-              {status && (
-                <p className={`text-center text-sm ${statusType === "success" ? "text-green-600" : "text-red-600"}`}>
-                  {status}
-                </p>
-              )}
             </FieldGroup>
           </form>
           <div className="relative hidden bg-muted md:block">
