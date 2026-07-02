@@ -114,6 +114,7 @@ export default function UserProfile() {
 
     setStatus("Profile updated successfully.");
     setSaving(false);
+    navigate("/dashboard");
   };
 
   return (

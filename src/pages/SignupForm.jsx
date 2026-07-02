@@ -48,7 +48,8 @@ export function SignupForm({
     localStorage.setItem("pendingPushSubscription", JSON.stringify(subscription.toJSON()));
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
     setStatus("");
     setStatusType("error");
 
@@ -106,7 +107,7 @@ export function SignupForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
+          <form className="p-6 md:p-8" onSubmit={handleRegister}>
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Create your account</h1>
@@ -158,7 +159,7 @@ export function SignupForm({
                 </FieldDescription>
               </Field>
               <Field>
-                <Button onClick={handleRegister}>Create Account</Button>
+                <Button type="submit">Create Account</Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
