@@ -65,7 +65,13 @@ export function SignupForm({
       return;
     }
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/profile?firstSetup=true`,
+      },
+    });
 
     if (error) {
       setStatus(error.message);
@@ -73,7 +79,7 @@ export function SignupForm({
       return;
     }
 
-    setStatus("Registration successful! Please check your email to confirm your signup. Redirecting to login...");
+    setStatus("Registration successful! Please check your email to confirm your signup. The confirmation link will open your profile setup.");
     setStatusType("success");
     setTimeout(() => navigate("/login"), 3000);
   };
