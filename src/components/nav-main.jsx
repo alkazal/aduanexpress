@@ -31,12 +31,12 @@ export function NavMain({ items }) {
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               asChild
-              tooltip="Quick Create"
+              tooltip="Submit New Report"
               className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
             >
               <Link to="/new-report">
                 <PlusCircle />
-                <span>Quick Create</span>
+                <span>Submit New Report</span>
               </Link>
             </SidebarMenuButton>
             <Button
