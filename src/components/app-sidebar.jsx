@@ -26,7 +26,7 @@ import { supabase } from "@/lib/supabase"
 function buildNav(role) {
   const nav = [
     { title: "Dashboard", url: "/", icon: Home },
-    { title: "My Reports", url: "/submissions", icon: FileText },
+    { title: "Reports", url: "/submissions", icon: FileText },
     // { title: "New Report", url: "/new-report", icon: PlusCircle },
   ]
 
