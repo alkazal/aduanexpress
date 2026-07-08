@@ -9,7 +9,7 @@ import { compressImage } from "../utils/imageCompressor";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Select } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
@@ -243,11 +243,25 @@ export default function EditReport() {
   return (
     <div className="p-2 px-2 w-full min-h-screen bg-gray-100">
       <div className="max-w-4xl w-full mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Report</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <div className="mb-6">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="link"
+            className="mb-2 h-auto px-0"
+          >
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold">Edit Report</h1>
+          <p className="text-gray-500 text-sm">Update report details and attachments</p>
+        </div>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Report Information</CardTitle>
+            <CardDescription>Make changes below, then save to sync updates.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
             <Input
@@ -269,12 +283,15 @@ export default function EditReport() {
               }
             >
               <option value="">Select</option>
+              <option value="Application">Application</option>
               <option value="Incident">Incident</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Attendance">Attendance</option>
             </Select>
           </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-project">Project</Label>
             <Select
@@ -299,6 +316,25 @@ export default function EditReport() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="edit-request-datetime">Datetime Request</Label>
+            <div className="w-full overflow-hidden">
+            <Input
+              id="edit-request-datetime"
+              type="datetime-local"
+              value={toDateTimeLocalValue(report.request_datetime)}
+              onChange={(e) =>
+                setReport({
+                  ...report,
+                  request_datetime: e.target.value ? new Date(e.target.value).toISOString() : null
+                })
+              }
+              className="w-full min-w-0 text-left"
+            />
+            </div>
+          </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-description">Description</Label>
             <Textarea
               id="edit-description"
@@ -310,6 +346,7 @@ export default function EditReport() {
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-requestor-name">Requestor Name</Label>
             <Input
@@ -332,20 +369,6 @@ export default function EditReport() {
               }
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-request-datetime">Datetime Request</Label>
-            <Input
-              id="edit-request-datetime"
-              type="datetime-local"
-              value={toDateTimeLocalValue(report.request_datetime)}
-              onChange={(e) =>
-                setReport({
-                  ...report,
-                  request_datetime: e.target.value ? new Date(e.target.value).toISOString() : null
-                })
-              }
-            />
           </div>
 
           <h3 className="font-semibold mt-4 mb-2">
@@ -464,23 +487,22 @@ export default function EditReport() {
             </div>
           )}
 
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              onClick={() => navigate(-1)}
+              className="w-full"
+              variant="outline"
+              type="button"
+            >
+              Back
+            </Button>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1"
+              className="w-full"
               type="button"
             >
               {saving ? "Saving..." : "Save Changes"}
-            </Button>
-
-            <Button
-              onClick={() => navigate(-1)}
-              className="flex-1"
-              variant="secondary"
-              type="button"
-            >
-              Cancel
             </Button>
           </div>
 
