@@ -241,16 +241,8 @@ export default function EditReport() {
     );
 
   return (
-   <div className="p-2 px-2 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-
-      <Button
-        onClick={() => navigate(-1)}
-        variant="link"
-        className="mb-4 px-0"
-      >
-        ← Back
-      </Button>
+    <div className="p-2 px-2 w-full min-h-screen bg-gray-100">
+      <div className="max-w-4xl w-full mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Edit Report</CardTitle>
