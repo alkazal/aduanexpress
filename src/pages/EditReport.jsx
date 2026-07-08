@@ -241,7 +241,8 @@ export default function EditReport() {
     );
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
+    <div className="p-2 px-2 w-full min-h-screen bg-gray-100">
+      <div className="max-w-4xl w-full mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Edit Report</CardTitle>
@@ -485,6 +486,7 @@ export default function EditReport() {
 
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
