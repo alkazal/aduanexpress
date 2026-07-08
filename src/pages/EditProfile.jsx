@@ -220,22 +220,22 @@ export default function EditProfile() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="profile-agency-name">Agency Name</Label>
+              <Label htmlFor="profile-agency-name">Company Name</Label>
               <Input
                 id="profile-agency-name"
                 value={agencyName}
                 onChange={(e) => setAgencyName(e.target.value)}
-                placeholder="Agency name"
+                placeholder="eg. KDEBWM, LKIM, SCS, SES, etc."
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="profile-agency-role">Agency Role</Label>
+              <Label htmlFor="profile-agency-role">Project Role</Label>
               <Input
                 id="profile-agency-role"
                 value={agencyRole}
                 onChange={(e) => setAgencyRole(e.target.value)}
-                placeholder="Agency role"
+                placeholder="eg. Project Manager, Technician, etc."
               />
             </div>
           </div>
