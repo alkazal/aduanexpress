@@ -13,6 +13,12 @@ import { Badge } from "../components/ui/badge";
 import { Select } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
 
+const NEW_REPORT_DRAFT_KEY = "newReportDraft.v1";
+
+function getCurrentLocalDatetimeValue() {
+  return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
 export default function NewReport() {
   const navigate = useNavigate();
 
@@ -23,7 +29,7 @@ export default function NewReport() {
   const [requestorName, setRequestorName] = useState("");
   const [requestorPhoneNo, setRequestorPhoneNo] = useState("");
   const [requestDatetime, setRequestDatetime] = useState(
-    () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+    () => getCurrentLocalDatetimeValue()
   );
   const [attachments, setAttachments] = useState([]); // multiple files
   const [error, setError] = useState(null);
@@ -34,6 +40,50 @@ export default function NewReport() {
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const nameWrapperRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const rawDraft = localStorage.getItem(NEW_REPORT_DRAFT_KEY);
+      if (!rawDraft) return;
+
+      const draft = JSON.parse(rawDraft);
+      if (typeof draft.reportType === "string") setReportType(draft.reportType);
+      if (typeof draft.projectId === "string") setProjectId(draft.projectId);
+      if (typeof draft.title === "string") setTitle(draft.title);
+      if (typeof draft.description === "string") setDescription(draft.description);
+      if (typeof draft.requestorName === "string") setRequestorName(draft.requestorName);
+      if (typeof draft.requestorPhoneNo === "string") setRequestorPhoneNo(draft.requestorPhoneNo);
+      if (typeof draft.requestDatetime === "string") setRequestDatetime(draft.requestDatetime);
+    } catch (err) {
+      console.error("Failed to restore new report draft:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      // Files are excluded because File objects are not safely serializable in localStorage.
+      const draft = {
+        reportType,
+        projectId,
+        title,
+        description,
+        requestorName,
+        requestorPhoneNo,
+        requestDatetime,
+      };
+      localStorage.setItem(NEW_REPORT_DRAFT_KEY, JSON.stringify(draft));
+    } catch (err) {
+      console.error("Failed to save new report draft:", err);
+    }
+  }, [
+    reportType,
+    projectId,
+    title,
+    description,
+    requestorName,
+    requestorPhoneNo,
+    requestDatetime,
+  ]);
 
   useEffect(() => {
     // Close suggestions on outside click
@@ -235,8 +285,25 @@ export default function NewReport() {
     }
 
     syncReports();
+    localStorage.removeItem(NEW_REPORT_DRAFT_KEY);
 
     navigate("/submissions");
+  };
+
+  const handleClearDraft = () => {
+    setReportType("");
+    setProjectId("");
+    setTitle("");
+    setDescription("");
+    setRequestorName("");
+    setRequestorPhoneNo("");
+    setRequestDatetime(getCurrentLocalDatetimeValue());
+    setAttachments([]);
+    setProgressMap({});
+    setFilteredSuggestions([]);
+    setShowSuggestions(false);
+    setError(null);
+    localStorage.removeItem(NEW_REPORT_DRAFT_KEY);
   };
 
 return (
@@ -422,9 +489,19 @@ return (
                 )}
               </div>
 
-              <Button type="submit" className="w-full">
-                Submit Report
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleClearDraft}
+                >
+                  Clear Draft
+                </Button>
+                <Button type="submit" className="w-full">
+                  Submit Report
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
