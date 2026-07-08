@@ -11,8 +11,10 @@ export default function ProtectedRoute({ children, requireProfileComplete = true
   useEffect(() => {
     let active = true;
 
-    async function loadSessionAndProfile(existingSession) {
-      setLoading(true);
+    async function loadSessionAndProfile(existingSession, options = { showLoading: true }) {
+      if (options.showLoading) {
+        setLoading(true);
+      }
       const session = existingSession || (await supabase.auth.getSession()).data.session;
       if (!active) return;
 
@@ -46,8 +48,26 @@ export default function ProtectedRoute({ children, requireProfileComplete = true
     loadSessionAndProfile();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        loadSessionAndProfile(session);
+      (event, session) => {
+        if (!active) return;
+
+        // Keep protected pages mounted during token refresh/focus events.
+        if (event === "SIGNED_OUT") {
+          setSession(null);
+          setProfileComplete(true);
+          setLoading(false);
+          return;
+        }
+
+        setSession(session ?? null);
+
+        if (!session?.user) {
+          setProfileComplete(true);
+          setLoading(false);
+          return;
+        }
+
+        loadSessionAndProfile(session, { showLoading: false });
       }
     );
 
