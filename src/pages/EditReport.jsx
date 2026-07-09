@@ -316,7 +316,7 @@ export default function EditReport() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-request-datetime">Datetime Request</Label>
+            <Label htmlFor="edit-request-datetime">Datetime Reported</Label>
             <div className="w-full overflow-hidden">
             <Input
               id="edit-request-datetime"
@@ -348,7 +348,7 @@ export default function EditReport() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-requestor-name">Requestor Name</Label>
+            <Label htmlFor="edit-requestor-name">Reporter Name</Label>
             <Input
               id="edit-requestor-name"
               value={report.requestor_name || ""}
@@ -359,7 +359,7 @@ export default function EditReport() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-requestor-phone">Requestor Phone No</Label>
+            <Label htmlFor="edit-requestor-phone">Reporter Phone No</Label>
             <Input
               id="edit-requestor-phone"
               type="tel"
