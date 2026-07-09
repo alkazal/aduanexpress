@@ -61,27 +61,34 @@ export default function Login() {
         subscription: subscriptionJson,
       };
 
-      let { error } = await supabase
+      // Avoid relying on ON CONFLICT(user_id). Some environments miss that unique index.
+      const { data: updatedRows, error: updateError } = await supabase
         .from(tableName)
-        .upsert(payload, { onConflict: "user_id" });
+        .update({ subscription: subscriptionJson })
+        .eq("user_id", userId)
+        .select("user_id")
+        .limit(1);
 
-      if (error?.code === "42P10") {
-        const retry = await supabase
-          .from(tableName)
-          .upsert(payload);
-        error = retry.error;
-      }
-
-      if (!error) {
+      if (!updateError && Array.isArray(updatedRows) && updatedRows.length > 0) {
         localStorage.removeItem("pendingPushSubscription");
         return;
       }
 
-      attemptErrors.push({ tableName, error });
+      const { error: insertError } = await supabase
+        .from(tableName)
+        .insert(payload);
 
-      if (error.code !== "42P01") {
+      if (!insertError) {
+        localStorage.removeItem("pendingPushSubscription");
+        return;
+      }
+
+      const finalError = updateError || insertError;
+      attemptErrors.push({ tableName, error: finalError });
+
+      if (finalError.code !== "42P01") {
         throw new Error(
-          `Push save failed on ${tableName}: ${formatErrorDetails(error)}`
+          `Push save failed on ${tableName}: ${formatErrorDetails(finalError)}`
         );
       }
     }
