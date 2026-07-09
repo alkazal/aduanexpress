@@ -50,57 +50,106 @@ export async function createTechnicianEventStream({
     throw new Error("createTechnicianEventStream requires userId");
   }
 
-  const streamToken = await getStreamToken(userId, tokenFunctionName);
+  let source = null;
+  let closed = false;
+  let reconnectAttempt = 0;
+  let reconnectTimer = null;
 
-  const streamUrl = new URL(path, window.location.origin);
-  streamUrl.searchParams.set("streamToken", streamToken);
-  streamUrl.searchParams.set("userId", userId);
+  function clearReconnectTimer() {
+    if (!reconnectTimer) return;
+    window.clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
 
-  const source = new EventSource(streamUrl.toString(), { withCredentials: false });
+  function scheduleReconnect() {
+    if (closed || reconnectTimer) return;
 
-  source.addEventListener("open", (event) => {
-    onOpen?.(event);
-  });
+    const delay = Math.min(30000, 1000 * 2 ** reconnectAttempt);
+    reconnectAttempt += 1;
 
-  source.addEventListener("error", (event) => {
-    onError?.(event);
-  });
+    reconnectTimer = window.setTimeout(async () => {
+      reconnectTimer = null;
+      await connectWithFreshToken();
+    }, delay);
+  }
 
-  source.addEventListener("report-upsert", (event) => {
-    const payload = parseEventData(event.data);
-    if (payload) onReportUpsert?.(payload);
-  });
+  async function connectWithFreshToken() {
+    if (closed) return;
 
-  source.addEventListener("report-remove", (event) => {
-    const payload = parseEventData(event.data);
-    if (payload?.id) onReportRemove?.(payload);
-  });
+    try {
+      const streamToken = await getStreamToken(userId, tokenFunctionName);
+      if (closed) return;
 
-  source.addEventListener("snapshot-required", (event) => {
-    const payload = parseEventData(event.data);
-    onSnapshotRequired?.(payload);
-  });
+      const streamUrl = new URL(path, window.location.origin);
+      streamUrl.searchParams.set("streamToken", streamToken);
+      streamUrl.searchParams.set("userId", userId);
 
-  source.onmessage = (event) => {
-    const payload = parseEventData(event.data);
-    if (!payload?.type) return;
+      const nextSource = new EventSource(streamUrl.toString(), { withCredentials: false });
+      source = nextSource;
 
-    if (payload.type === "report-upsert") {
-      onReportUpsert?.(payload.data || payload);
+      nextSource.addEventListener("open", (event) => {
+        if (source !== nextSource || closed) return;
+        reconnectAttempt = 0;
+        onOpen?.(event);
+      });
+
+      nextSource.addEventListener("error", (event) => {
+        if (source !== nextSource || closed) return;
+        onError?.(event);
+        nextSource.close();
+        source = null;
+        scheduleReconnect();
+      });
+
+      nextSource.addEventListener("report-upsert", (event) => {
+        if (source !== nextSource || closed) return;
+        const payload = parseEventData(event.data);
+        if (payload) onReportUpsert?.(payload);
+      });
+
+      nextSource.addEventListener("report-remove", (event) => {
+        if (source !== nextSource || closed) return;
+        const payload = parseEventData(event.data);
+        if (payload?.id) onReportRemove?.(payload);
+      });
+
+      nextSource.addEventListener("snapshot-required", (event) => {
+        if (source !== nextSource || closed) return;
+        const payload = parseEventData(event.data);
+        onSnapshotRequired?.(payload);
+      });
+
+      nextSource.onmessage = (event) => {
+        if (source !== nextSource || closed) return;
+        const payload = parseEventData(event.data);
+        if (!payload?.type) return;
+
+        if (payload.type === "report-upsert") {
+          onReportUpsert?.(payload.data || payload);
+        }
+
+        if (payload.type === "report-remove") {
+          onReportRemove?.(payload.data || payload);
+        }
+
+        if (payload.type === "snapshot-required") {
+          onSnapshotRequired?.(payload.data || payload);
+        }
+      };
+    } catch (error) {
+      onError?.(error);
+      scheduleReconnect();
     }
+  }
 
-    if (payload.type === "report-remove") {
-      onReportRemove?.(payload.data || payload);
-    }
-
-    if (payload.type === "snapshot-required") {
-      onSnapshotRequired?.(payload.data || payload);
-    }
-  };
+  await connectWithFreshToken();
 
   return {
     close() {
-      source.close();
+      closed = true;
+      clearReconnectTimer();
+      source?.close();
+      source = null;
     },
   };
 }
