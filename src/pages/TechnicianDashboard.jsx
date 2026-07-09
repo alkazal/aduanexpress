@@ -4,6 +4,7 @@ import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 import { toReportServerPayload } from "../lib/reportPayload";
+import { createTechnicianEventStream } from "../lib/technicianEventStream";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
@@ -38,6 +39,7 @@ export default function TechnicianDashboard() {
   const [reports, setReports] = useState([]);
   const [statusUpdates, setStatusUpdates] = useState({});
   const [loading, setLoading] = useState(true);
+  const [liveState, setLiveState] = useState("idle");
   const [selectedProject, setSelectedProject] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -49,6 +51,33 @@ export default function TechnicianDashboard() {
   const [levelUpdates, setLevelUpdates] = useState({});
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
+
+  function mergeReportIntoList(prevReports, incomingReport) {
+    if (!incomingReport?.id) return prevReports;
+
+    const incoming = {
+      ...incomingReport,
+      project_name:
+        incomingReport.project_name ||
+        incomingReport.project?.name ||
+        null,
+    };
+
+    const idx = prevReports.findIndex((r) => r.id === incoming.id);
+
+    if (idx === -1) {
+      return [incoming, ...prevReports];
+    }
+
+    const next = [...prevReports];
+    next[idx] = { ...next[idx], ...incoming };
+    return next;
+  }
+
+  function removeReportFromList(prevReports, reportId) {
+    if (!reportId) return prevReports;
+    return prevReports.filter((r) => r.id !== reportId);
+  }
 
   useEffect(() => {
     loadReports();
@@ -62,6 +91,74 @@ export default function TechnicianDashboard() {
     window.addEventListener("online", handleOnline);
 
     return () => window.removeEventListener("online", handleOnline);
+  }, []);
+
+  useEffect(() => {
+    let stream = null;
+    let mounted = true;
+
+    async function initStream() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!mounted || !userId || !navigator.onLine) {
+        setLiveState(navigator.onLine ? "idle" : "offline");
+        return;
+      }
+
+      setLiveState("connecting");
+
+      try {
+        stream = await createTechnicianEventStream({
+          userId,
+          onOpen: () => {
+            if (mounted) setLiveState("live");
+          },
+          onError: () => {
+            if (mounted) setLiveState(navigator.onLine ? "reconnecting" : "offline");
+          },
+          onReportUpsert: (payload) => {
+            if (!mounted) return;
+
+            if (payload.assigned_to && payload.assigned_to !== userId) {
+              setReports((prev) => removeReportFromList(prev, payload.id));
+              return;
+            }
+
+            setReports((prev) => mergeReportIntoList(prev, payload));
+          },
+          onReportRemove: (payload) => {
+            if (!mounted) return;
+            setReports((prev) => removeReportFromList(prev, payload.id));
+          },
+          onSnapshotRequired: async () => {
+            if (!mounted) return;
+            await loadReports();
+          },
+        });
+      } catch (error) {
+        console.error("Unable to start technician SSE stream:", error);
+        if (mounted) setLiveState("error");
+      }
+    }
+
+    initStream();
+
+    const handleOffline = () => setLiveState("offline");
+    const handleOnline = () => {
+      setLiveState("reconnecting");
+      loadReports();
+    };
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      stream?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -325,6 +422,17 @@ export default function TechnicianDashboard() {
   const startIndex = (safePage - 1) * PAGE_SIZE;
   const pagedReports = filteredReports.slice(startIndex, startIndex + PAGE_SIZE);
 
+  const liveStateConfig = {
+    idle: { label: "Live updates idle", tone: "bg-slate-100 text-slate-700" },
+    connecting: { label: "Connecting live updates", tone: "bg-blue-100 text-blue-700" },
+    live: { label: "Live updates active", tone: "bg-green-100 text-green-700" },
+    reconnecting: { label: "Reconnecting live updates", tone: "bg-amber-100 text-amber-700" },
+    offline: { label: "Offline mode", tone: "bg-gray-100 text-gray-700" },
+    error: { label: "Live updates unavailable", tone: "bg-red-100 text-red-700" },
+  };
+
+  const currentLiveState = liveStateConfig[liveState] || liveStateConfig.idle;
+
   function clearFilters() {
     setSelectedProject("");
     setSelectedStatus("");
@@ -453,6 +561,13 @@ export default function TechnicianDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="w-full sm:w-auto">
             <h1 className="text-xl font-bold">Technician Dashboard</h1>
+            <div className="mt-1">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${currentLiveState.tone}`}
+              >
+                {currentLiveState.label}
+              </span>
+            </div>
             {/* <p className="text-gray-500 text-sm">
               Update your personal information 
             </p> */}
