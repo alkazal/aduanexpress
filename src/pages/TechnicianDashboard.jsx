@@ -37,6 +37,7 @@ function isNetworkLikeError(error) {
 
 export default function TechnicianDashboard() {
   const [reports, setReports] = useState([]);
+  const [projectNameById, setProjectNameById] = useState({});
   const [statusUpdates, setStatusUpdates] = useState({});
   const [loading, setLoading] = useState(true);
   const [liveState, setLiveState] = useState("idle");
@@ -52,15 +53,35 @@ export default function TechnicianDashboard() {
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
 
+  function rememberProjectNames(reportList) {
+    if (!Array.isArray(reportList) || reportList.length === 0) return;
+
+    setProjectNameById((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      reportList.forEach((report) => {
+        if (!report?.project_id || !report?.project_name) return;
+        if (next[report.project_id] === report.project_name) return;
+        next[report.project_id] = report.project_name;
+        changed = true;
+      });
+
+      return changed ? next : prev;
+    });
+  }
+
   function mergeReportIntoList(prevReports, incomingReport) {
     if (!incomingReport?.id) return prevReports;
 
+    const resolvedProjectName =
+      incomingReport.project_name ||
+      incomingReport.project?.name ||
+      (incomingReport.project_id ? projectNameById[incomingReport.project_id] : null);
+
     const incoming = {
       ...incomingReport,
-      project_name:
-        incomingReport.project_name ||
-        incomingReport.project?.name ||
-        null,
+      ...(resolvedProjectName ? { project_name: resolvedProjectName } : {}),
     };
 
     const idx = prevReports.findIndex((r) => r.id === incoming.id);
@@ -124,6 +145,8 @@ export default function TechnicianDashboard() {
               setReports((prev) => removeReportFromList(prev, payload.id));
               return;
             }
+
+            rememberProjectNames([payload]);
 
             setReports((prev) => mergeReportIntoList(prev, payload));
           },
@@ -219,6 +242,7 @@ export default function TechnicianDashboard() {
             project_name: r.project?.name || (local || r).project_name || null
           };
         });
+        rememberProjectNames(list);
         setReports(list);
       }
     } 
@@ -240,6 +264,7 @@ export default function TechnicianDashboard() {
         })
       );
 
+      rememberProjectNames(list);
       setReports(list);
     }
 
