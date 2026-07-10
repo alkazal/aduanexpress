@@ -904,7 +904,7 @@ export default function TechnicianDashboard() {
                   </Select>
 
                   <Select
-                    className="h-8 text-xs w-full"
+                    className="h-8 text-[12px] w-full"
                     value={statusUpdates[r.id] || ""}
                     onChange={(e) =>
                       setStatusUpdates({
