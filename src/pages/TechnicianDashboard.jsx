@@ -133,7 +133,7 @@ export default function TechnicianDashboard() {
           },
           onSnapshotRequired: async () => {
             if (!mounted) return;
-            await loadReports();
+            await loadReports({ silent: true });
           },
         });
       } catch (error) {
@@ -181,8 +181,12 @@ export default function TechnicianDashboard() {
     }
   }, [startDate, endDate]);
 
-  async function loadReports() {
-    setLoading(true);
+  async function loadReports(options = {}) {
+    const { silent = false } = options;
+
+    if (!silent) {
+      setLoading(true);
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
@@ -239,7 +243,9 @@ export default function TechnicianDashboard() {
       setReports(list);
     }
 
-    setLoading(false);
+    if (!silent) {
+      setLoading(false);
+    }
   }
 
   // --------------------------
