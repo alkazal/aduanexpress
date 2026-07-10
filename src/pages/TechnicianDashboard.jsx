@@ -434,7 +434,8 @@ export default function TechnicianDashboard() {
   );
 
   const statusCounts = {
-    NEW: baseFilteredReports.filter(r => r.status === "Open").length,
+    NEW: baseFilteredReports.filter(r => r.status === "New").length,
+    OPEN: baseFilteredReports.filter(r => r.status === "Open").length,
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
     RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
   };
@@ -742,11 +743,23 @@ export default function TechnicianDashboard() {
             variant="outline"
             className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
               selectedStatus === ""
-                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+                ? "bg-gray-600 text-white border-gray-600 hover:bg-gray-600"
                 : ""
             }`}
           >
             All ({baseFilteredReports.length})
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("New")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "New"
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-600"
+                : ""
+            }`}
+          >
+            New ({statusCounts.NEW})
           </Button>
           <Button
             type="button"
