@@ -910,7 +910,7 @@ export default function TechnicianDashboard() {
           <CardContent className="p-4 flex justify-between items-start">
             <div className="flex flex-col gap-2">
               <p className="text-sm text-gray-500">Closed</p>
-              <p className="text-3xl font-bold text-gray-700">{baseFilteredReports.length}</p>
+              <p className="text-3xl font-bold text-gray-700">{statusCounts.CLOSED}</p>
             </div>
 
             <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
