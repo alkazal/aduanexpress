@@ -14,7 +14,18 @@ export default function AssignReport() {
   const [selectedTech, setSelectedTech] = useState({});
   const [selectedLevel, setSelectedLevel] = useState({});
   const [loading, setLoading] = useState(true);
+  const [isMobileHeaderCompact, setIsMobileHeaderCompact] = useState(false);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setIsMobileHeaderCompact(window.scrollY > 24);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  
   useEffect(() => {
     loadData();
     // // Re-sync when back online
@@ -239,7 +250,9 @@ export default function AssignReport() {
         </Alert>
       )}
 
-      <div className="grid gap-5">
+      <div className={`sticky top-16 z-20 mx-0 px-2 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-2 pb-3"
+        } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}>
         {reports.map((r) => (
           <Card key={r.id} className="shadow-sm hover:shadow-md transition">
             <CardHeader className="pb-3">
