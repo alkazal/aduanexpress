@@ -914,7 +914,7 @@ export default function TechnicianDashboard() {
             </div>
 
             <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Inbox className="h-6 w-6 text-gray-600" />
+              <FileCheck className="h-6 w-6 text-gray-600" />
             </div>
           </CardContent>
         </Card>
