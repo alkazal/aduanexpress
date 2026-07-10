@@ -804,7 +804,7 @@ export default function TechnicianDashboard() {
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
-            selectedStatus === "" ? "ring-2 ring-blue-500" : ""
+            selectedStatus === "" ? "ring-2 ring-gray-500" : ""
           }`}
         >
           <CardContent className="p-4 flex justify-between items-start">
@@ -814,7 +814,24 @@ export default function TechnicianDashboard() {
             </div>
 
             <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Inbox className="h-6 w-6 text-blue-600" />
+              <Inbox className="h-6 w-6 text-gray-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          onClick={() => setSelectedStatus("New")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "New" ? "ring-2 ring-blue-500" : ""
+          }`}
+        >
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">New</p>
+              <p className="text-3xl font-bold text-gray-700">{statusCounts.NEW}</p>
+            </div>
+
+            <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Mail className="h-6 w-6 text-blue-600" />
             </div>
           </CardContent>
         </Card>
