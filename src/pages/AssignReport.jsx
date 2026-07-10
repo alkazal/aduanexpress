@@ -25,7 +25,7 @@ export default function AssignReport() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  
+
   useEffect(() => {
     loadData();
     // // Re-sync when back online
@@ -233,7 +233,10 @@ export default function AssignReport() {
   }
 
   return (
-    <div className="p-2 px-2 max-w-6xl mx-auto">
+    <div className={`sticky top-16 z-20 mx-0 px-2 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
+          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-2 pb-3"
+      } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}>
+      
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-2xl font-bold">Assign Reports</h1>
@@ -250,9 +253,7 @@ export default function AssignReport() {
         </Alert>
       )}
 
-      <div className={`sticky top-16 z-20 mx-0 px-2 mb-4 bg-gray-50/95 backdrop-blur border-b border-gray-100 transition-all duration-200 ${
-          isMobileHeaderCompact ? "pt-2 pb-2 shadow-sm" : "pt-2 pb-3"
-        } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {reports.map((r) => (
           <Card key={r.id} className="shadow-sm hover:shadow-md transition">
             <CardHeader className="pb-3">
