@@ -801,7 +801,7 @@ export default function TechnicianDashboard() {
         </div>
       </div>
 
-      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
