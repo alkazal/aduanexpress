@@ -21,7 +21,8 @@ import {
   AlertCircle,
   CheckCircle,
   CalendarRange,
-  ChevronDown
+  ChevronDown,
+  FileCheck
 } from "lucide-react";
 
 function isNetworkLikeError(error) {
@@ -438,7 +439,8 @@ export default function TechnicianDashboard() {
     NEW: baseFilteredReports.filter(r => r.status === "New").length,
     OPEN: baseFilteredReports.filter(r => r.status === "Open").length,
     PENDING: baseFilteredReports.filter(r => r.status === "Pending").length,
-    RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length
+    RESOLVED: baseFilteredReports.filter(r => r.status === "Resolved").length,
+    CLOSED: baseFilteredReports.filter(r => r.status === "Closed").length
   };
 
   const hasActiveFilters =
@@ -798,10 +800,22 @@ export default function TechnicianDashboard() {
           >
             Resolved ({statusCounts.RESOLVED})
           </Button>
+          <Button
+            type="button"
+            onClick={() => setSelectedStatus("Closed")}
+            variant="outline"
+            className={`h-auto px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+              selectedStatus === "Closed"
+                ? "bg-gray-600 text-white border-gray-600 hover:bg-gray-600"
+                : ""
+            }`}
+          >
+            Closed ({statusCounts.CLOSED})
+          </Button>
         </div>
       </div>
 
-      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         <Card
           onClick={() => setSelectedStatus("")}
           className={`cursor-pointer hover:bg-gray-50 ${
@@ -884,6 +898,23 @@ export default function TechnicianDashboard() {
 
             <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          onClick={() => setSelectedStatus("Closed")}
+          className={`cursor-pointer hover:bg-gray-50 ${
+            selectedStatus === "Closed" ? "ring-2 ring-gray-500" : ""
+          }`}
+        >
+          <CardContent className="p-4 flex justify-between items-start">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500">Closed</p>
+              <p className="text-3xl font-bold text-gray-700">{baseFilteredReports.length}</p>
+            </div>
+
+            <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
+              <Inbox className="h-6 w-6 text-gray-600" />
             </div>
           </CardContent>
         </Card>
