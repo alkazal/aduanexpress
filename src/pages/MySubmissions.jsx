@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 //import { syncReports, setSyncStatusListener, setReportSyncedListener } from "../lib/sync";
 import { setSyncStatusListener, setReportSyncedListener } from "../lib/syncEvents";
+import { createMySubmissionsEventStream } from "../lib/mySubmissionsEventStream";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -19,6 +20,7 @@ export default function MySubmissions() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("idle");
+  const [liveState, setLiveState] = useState("idle");
   const [selectedProject, setSelectedProject] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,10 +31,15 @@ export default function MySubmissions() {
   const [isMobileDateFiltersOpen, setIsMobileDateFiltersOpen] = useState(false);
   const navigate = useNavigate();
   const PAGE_SIZE = 10;
+  const refreshTimerRef = useRef(null);
   
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (options = {}) => {
+    const { silent = false } = options;
+
+    if (!silent) {
+      setLoading(true);
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
@@ -44,7 +51,7 @@ export default function MySubmissions() {
       if (navigator.onLine) navigate("/login");
       const offlineData = await db.reports.toArray();
       setItems(offlineData);
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
@@ -116,7 +123,18 @@ export default function MySubmissions() {
 
     //setItems([...offlineData, ...onlineData]);    
     setItems(list);
-    setLoading(false);
+    if (!silent) {
+      setLoading(false);
+    }
+  };
+
+  const scheduleSilentRefresh = () => {
+    if (refreshTimerRef.current) return;
+
+    refreshTimerRef.current = window.setTimeout(async () => {
+      refreshTimerRef.current = null;
+      await loadData({ silent: true });
+    }, 250);
   };
 
 
@@ -128,6 +146,72 @@ export default function MySubmissions() {
       if (status === "done") loadData();
     });
 
+  }, []);
+
+  useEffect(() => {
+    let stream = null;
+    let mounted = true;
+
+    async function initStream() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!mounted || !userId || !navigator.onLine) {
+        setLiveState(navigator.onLine ? "idle" : "offline");
+        return;
+      }
+
+      setLiveState("connecting");
+
+      try {
+        stream = await createMySubmissionsEventStream({
+          userId,
+          onOpen: () => {
+            if (mounted) setLiveState("live");
+          },
+          onError: () => {
+            if (mounted) setLiveState(navigator.onLine ? "reconnecting" : "offline");
+          },
+          onSubmissionUpsert: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+          onSubmissionRemove: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+          onSnapshotRequired: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+        });
+      } catch (error) {
+        console.error("Unable to start my submissions SSE stream:", error);
+        if (mounted) setLiveState("error");
+      }
+    }
+
+    initStream();
+
+    const handleOffline = () => setLiveState("offline");
+    const handleOnline = () => {
+      setLiveState("reconnecting");
+      loadData({ silent: true });
+    };
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      mounted = false;
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      stream?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -214,6 +298,17 @@ export default function MySubmissions() {
   const pendingReports = baseFilteredItems.filter((r) => r.status === "Pending").length;
   const resolvedReports = baseFilteredItems.filter((r) => r.status === "Resolved").length;
 
+  const liveStateConfig = {
+    idle: { label: "Live updates idle", tone: "bg-slate-100 text-slate-700" },
+    connecting: { label: "Connecting live updates", tone: "bg-blue-100 text-blue-700" },
+    live: { label: "Live updates active", tone: "bg-green-100 text-green-700" },
+    reconnecting: { label: "Reconnecting live updates", tone: "bg-amber-100 text-amber-700" },
+    offline: { label: "Offline mode", tone: "bg-gray-100 text-gray-700" },
+    error: { label: "Live updates unavailable", tone: "bg-red-100 text-red-700" },
+  };
+
+  const currentLiveState = liveStateConfig[liveState] || liveStateConfig.idle;
+
   return (
     <div>
       <div
@@ -222,7 +317,14 @@ export default function MySubmissions() {
         } sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-0 sm:border-b-0 sm:shadow-none`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold">Reports</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Reports</h1>
+            <div className="mt-1">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${currentLiveState.tone}`}>
+                {currentLiveState.label}
+              </span>
+            </div>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full sm:max-w-4xl">
 
             <div className="w-full sm:flex-1">
