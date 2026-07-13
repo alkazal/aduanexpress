@@ -822,7 +822,7 @@ export default function ReportDetails() {
               a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800" {...props} />,
             }}
           >
-            {report.description || "No description provided"}
+            {nl2br(report.description) || "No description provided"}
           </ReactMarkdown>
         </div>
 
