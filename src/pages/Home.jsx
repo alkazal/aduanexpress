@@ -1,10 +1,11 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { db } from "../db";
 import { useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
 import { Button } from "../components/ui/button";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
+import { createMySubmissionsEventStream } from "../lib/mySubmissionsEventStream";
 //import { startNotificationListener } from "../lib/notificationListener";
 
 import { AlertCircle, CheckCircle, FileText, FolderOpen, Lock } from 'lucide-react';
@@ -30,7 +31,9 @@ export default function Home() {
   const [toastType, setToastType] = useState("success");
   const [selectedProject, setSelectedProject] = useState("");
   const [showCharts, setShowCharts] = useState(true);
+  const [liveState, setLiveState] = useState("idle");
   const navigate = useNavigate();
+  const refreshTimerRef = useRef(null);
 
 
   async function wakePushWorker() {
@@ -44,8 +47,12 @@ export default function Home() {
   }
 
   // Load reports
-  const loadReports = async () => {
-    setLoading(true);
+  const loadReports = async (options = {}) => {
+    const { silent = false } = options;
+
+    if (!silent) {
+      setLoading(true);
+    }
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -125,8 +132,19 @@ export default function Home() {
       .toArray();
 
     setReports([...offlineReports, ...onlineReports]);
-    setLoading(false);
+    if (!silent) {
+      setLoading(false);
+    }
   };
+
+  function scheduleSilentRefresh() {
+    if (refreshTimerRef.current) return;
+
+    refreshTimerRef.current = window.setTimeout(async () => {
+      refreshTimerRef.current = null;
+      await loadReports({ silent: true });
+    }, 250);
+  }
 
   // Hooks inside component
   useEffect(() => {
@@ -153,6 +171,72 @@ export default function Home() {
 
     return () => clearSyncListeners();
 
+  }, []);
+
+  useEffect(() => {
+    let stream = null;
+    let mounted = true;
+
+    async function initStream() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!mounted || !userId || !navigator.onLine) {
+        setLiveState(navigator.onLine ? "idle" : "offline");
+        return;
+      }
+
+      setLiveState("connecting");
+
+      try {
+        stream = await createMySubmissionsEventStream({
+          userId,
+          onOpen: () => {
+            if (mounted) setLiveState("live");
+          },
+          onError: () => {
+            if (mounted) setLiveState(navigator.onLine ? "reconnecting" : "offline");
+          },
+          onSubmissionUpsert: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+          onSubmissionRemove: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+          onSnapshotRequired: () => {
+            if (!mounted) return;
+            scheduleSilentRefresh();
+          },
+        });
+      } catch (error) {
+        console.error("Unable to start Home SSE stream:", error);
+        if (mounted) setLiveState("error");
+      }
+    }
+
+    initStream();
+
+    const handleOffline = () => setLiveState("offline");
+    const handleOnline = () => {
+      setLiveState("reconnecting");
+      loadReports({ silent: true });
+    };
+
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      mounted = false;
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      stream?.close();
+    };
   }, []);
 
   const projectOptions = Array.from(
@@ -207,9 +291,25 @@ const projectChartData = Object.values(
     return acc;
   }, {})
 );
+
+  const liveStateConfig = {
+    idle: { label: "Live updates idle", tone: "bg-slate-100 text-slate-700" },
+    connecting: { label: "Connecting live updates", tone: "bg-blue-100 text-blue-700" },
+    live: { label: "Live updates active", tone: "bg-green-100 text-green-700" },
+    reconnecting: { label: "Reconnecting live updates", tone: "bg-amber-100 text-amber-700" },
+    offline: { label: "Offline mode", tone: "bg-gray-100 text-gray-700" },
+    error: { label: "Live updates unavailable", tone: "bg-red-100 text-red-700" },
+  };
+
+  const currentLiveState = liveStateConfig[liveState] || liveStateConfig.idle;
   
   return (
     <div>
+      <div className="mb-4">
+        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${currentLiveState.tone}`}>
+          {currentLiveState.label}
+        </span>
+      </div>
       {syncStatus === "syncing" && (
         <p className="text-blue-600 font-medium mb-4">Syncing offline reports...</p>
       )}
