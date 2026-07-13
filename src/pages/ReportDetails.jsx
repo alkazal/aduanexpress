@@ -25,6 +25,7 @@ export default function ReportDetails() {
   const [publicReply, setPublicReply] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [comments, setComments] = useState([]);
+  const [userNameById, setUserNameById] = useState({});
   const [activeTab, setActiveTab] = useState("public");
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
@@ -38,6 +39,46 @@ export default function ReportDetails() {
   const isStaff = userRole === "manager" || userRole === "technician";
   const [liveState, setLiveState] = useState("idle");
   const snapshotTimerRef = useRef(null);
+  const pendingUserLookupRef = useRef(new Set());
+
+  function rememberCommentAuthors(commentList) {
+    if (!Array.isArray(commentList) || commentList.length === 0) return;
+
+    setUserNameById((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      commentList.forEach((comment) => {
+        if (!comment?.user_id || !comment?.user?.full_name) return;
+        if (next[comment.user_id] === comment.user.full_name) return;
+        next[comment.user_id] = comment.user.full_name;
+        changed = true;
+      });
+
+      return changed ? next : prev;
+    });
+  }
+
+  async function hydrateAuthorName(userId) {
+    if (!userId || userNameById[userId] || pendingUserLookupRef.current.has(userId)) return;
+
+    pendingUserLookupRef.current.add(userId);
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .single();
+
+      if (!error && data?.full_name) {
+        setUserNameById((prev) => ({ ...prev, [userId]: data.full_name }));
+      }
+    } catch (err) {
+      console.error("Failed to hydrate author name:", err);
+    } finally {
+      pendingUserLookupRef.current.delete(userId);
+    }
+  }
 
   useEffect(() => {
     async function getUserRole() {
@@ -179,6 +220,7 @@ export default function ReportDetails() {
               };
             })
           );
+          rememberCommentAuthors(commentsWithAttachments);
           setComments(commentsWithAttachments);
         }
       } catch (err) {
@@ -235,11 +277,34 @@ export default function ReportDetails() {
           },
           onCommentUpsert: (payload) => {
             if (!mounted) return;
+
+            if (payload.user_id && !payload.user?.full_name) {
+              hydrateAuthorName(payload.user_id);
+            }
+
             setComments((prev) => {
               const idx = prev.findIndex((c) => c.id === payload.id);
-              if (idx === -1) return [{ ...payload, attachments: [] }, ...prev];
+              const existing = idx === -1 ? null : prev[idx];
+
+              const resolvedName =
+                payload.user?.full_name ||
+                existing?.user?.full_name ||
+                userNameById[payload.user_id] ||
+                null;
+
+              const merged = {
+                ...(existing || { attachments: [] }),
+                ...payload,
+                ...(resolvedName
+                  ? { user: { ...(existing?.user || {}), full_name: resolvedName } }
+                  : existing?.user
+                    ? { user: existing.user }
+                    : {}),
+              };
+
+              if (idx === -1) return [merged, ...prev];
               const next = [...prev];
-              next[idx] = { ...next[idx], ...payload };
+              next[idx] = merged;
               return next;
             });
           },
@@ -307,6 +372,25 @@ export default function ReportDetails() {
       stream?.close();
     };
   }, [id]);
+
+  useEffect(() => {
+    if (Object.keys(userNameById).length === 0) return;
+
+    setComments((prev) => {
+      let changed = false;
+      const next = prev.map((comment) => {
+        if (comment?.user?.full_name || !comment?.user_id) return comment;
+        const resolvedName = userNameById[comment.user_id];
+        if (!resolvedName) return comment;
+        changed = true;
+        return {
+          ...comment,
+          user: { ...(comment.user || {}), full_name: resolvedName },
+        };
+      });
+      return changed ? next : prev;
+    });
+  }, [userNameById]);
 
   useEffect(() => {
     return () => {

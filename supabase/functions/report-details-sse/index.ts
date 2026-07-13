@@ -189,6 +189,10 @@ Deno.serve(async (req) => {
       const channel = adminClient
         .channel(`report-details:${reportId}`)
 
+        // Utility to scope events to current report stream.
+        // For DELETE events, report_id may be missing unless replica identity is full.
+        // In that case, we still emit by id and let client ignore unknown ids.
+
         // Report row changes
         .on(
           "postgres_changes",
@@ -202,29 +206,42 @@ Deno.serve(async (req) => {
         // Comment inserts and updates
         .on(
           "postgres_changes",
-          { event: "INSERT", schema: "public", table: "report_comments", filter: `report_id=eq.${reportId}` },
+          { event: "INSERT", schema: "public", table: "report_comments" },
           (payload) => {
             if (closed) return;
-            write(sseFrame({ event: "comment-upsert", data: payload.new as Record<string, unknown> }));
+            const row = payload.new as Record<string, unknown>;
+            if (String(row.report_id || "") !== reportId) return;
+            write(sseFrame({ event: "comment-upsert", data: row }));
           }
         )
         .on(
           "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "report_comments", filter: `report_id=eq.${reportId}` },
+          { event: "UPDATE", schema: "public", table: "report_comments" },
           (payload) => {
             if (closed) return;
-            write(sseFrame({ event: "comment-upsert", data: payload.new as Record<string, unknown> }));
+            const row = payload.new as Record<string, unknown>;
+            if (String(row.report_id || "") !== reportId) return;
+            write(sseFrame({ event: "comment-upsert", data: row }));
           }
         )
         .on(
           "postgres_changes",
-          { event: "DELETE", schema: "public", table: "report_comments", filter: `report_id=eq.${reportId}` },
+          { event: "DELETE", schema: "public", table: "report_comments" },
           (payload) => {
             if (closed) return;
-            const oldId = typeof (payload.old as Record<string, unknown>)?.id === "string"
-              ? (payload.old as Record<string, unknown>).id as string
-              : null;
-            if (oldId) write(sseFrame({ event: "comment-remove", data: { id: oldId } }));
+            const oldRow = payload.old as Record<string, unknown>;
+            const oldIdRaw = oldRow?.id;
+            const oldId = oldIdRaw == null ? null : String(oldIdRaw);
+            if (!oldId) return;
+
+            const oldReportIdRaw = oldRow?.report_id;
+            const oldReportId = oldReportIdRaw == null ? null : String(oldReportIdRaw);
+
+            // If report_id is present, enforce match. If missing, emit by id and
+            // let client drop unknown IDs (prevents missed deletes on default replica identity).
+            if (oldReportId && oldReportId !== reportId) return;
+
+            write(sseFrame({ event: "comment-remove", data: { id: oldId } }));
           }
         )
 
