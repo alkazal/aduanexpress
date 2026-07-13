@@ -1,7 +1,8 @@
- import { useEffect, useState } from "react";
+ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
+import { createReportDetailsEventStream } from "../lib/reportDetailsEventStream";
 import { deleteReport } from "../utils/deleteReport";
 import ReactMarkdown from "react-markdown";
 import { Button } from "../components/ui/button";
@@ -35,6 +36,8 @@ export default function ReportDetails() {
 
   const [userRole, setUserRole] = useState(null);
   const isStaff = userRole === "manager" || userRole === "technician";
+  const [liveState, setLiveState] = useState("idle");
+  const snapshotTimerRef = useRef(null);
 
   useEffect(() => {
     async function getUserRole() {
@@ -186,6 +189,123 @@ export default function ReportDetails() {
     }
 
     load();
+  }, [id]);
+
+  // ---- Live SSE stream for this report ----
+  useEffect(() => {
+    let stream = null;
+    let mounted = true;
+
+    async function initStream() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!mounted || !userId || !navigator.onLine) {
+        setLiveState(navigator.onLine ? "idle" : "offline");
+        return;
+      }
+
+      setLiveState("connecting");
+
+      try {
+        stream = await createReportDetailsEventStream({
+          reportId: id,
+          userId,
+          onOpen: () => {
+            if (mounted) setLiveState("live");
+          },
+          onError: () => {
+            if (mounted) setLiveState(navigator.onLine ? "reconnecting" : "offline");
+          },
+          onReportUpdated: (payload) => {
+            if (!mounted) return;
+            setReport((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                ...payload,
+                // preserve joined fields already loaded
+                reporter: prev.reporter,
+                technician: prev.technician,
+                project_id: prev.project_id,
+                project_name: prev.project_name,
+                history: prev.history,
+              };
+            });
+          },
+          onCommentUpsert: (payload) => {
+            if (!mounted) return;
+            setComments((prev) => {
+              const idx = prev.findIndex((c) => c.id === payload.id);
+              if (idx === -1) return [{ ...payload, attachments: [] }, ...prev];
+              const next = [...prev];
+              next[idx] = { ...next[idx], ...payload };
+              return next;
+            });
+          },
+          onCommentRemove: (payload) => {
+            if (!mounted) return;
+            setComments((prev) => prev.filter((c) => c.id !== payload.id));
+          },
+          onAttachmentUpsert: (payload) => {
+            if (!mounted) return;
+            setAttachments((prev) => {
+              if (prev.some((a) => a.id === payload.id)) return prev;
+              return [...prev, payload];
+            });
+          },
+          onAttachmentRemove: (payload) => {
+            if (!mounted) return;
+            setAttachments((prev) => prev.filter((a) => a.id !== payload.id));
+          },
+          onSnapshotRequired: () => {
+            if (!mounted) return;
+            // Debounce silent full reload
+            if (snapshotTimerRef.current) return;
+            snapshotTimerRef.current = window.setTimeout(async () => {
+              snapshotTimerRef.current = null;
+              const { data: refreshed } = await supabase
+                .from("reports")
+                .select(`
+                  *,
+                  reporter:user_id ( full_name ),
+                  technician:assigned_to ( full_name ),
+                  project:project_id ( id, name ),
+                  history:report_status_history (
+                    id, old_status, new_status, changed_at, comment, changed_by, changed_by_name
+                  )
+                `)
+                .eq("id", id)
+                .single();
+
+              if (refreshed && mounted) {
+                setReport((prev) => ({
+                  ...prev,
+                  ...refreshed,
+                  project_id: refreshed.project?.id || prev?.project_id || null,
+                  project_name: refreshed.project?.name || prev?.project_name || null,
+                  history: refreshed.history || prev?.history || [],
+                }));
+              }
+            }, 300);
+          },
+        });
+      } catch (error) {
+        console.error("Unable to start report details SSE stream:", error);
+        if (mounted) setLiveState("error");
+      }
+    }
+
+    initStream();
+
+    return () => {
+      mounted = false;
+      if (snapshotTimerRef.current) {
+        window.clearTimeout(snapshotTimerRef.current);
+        snapshotTimerRef.current = null;
+      }
+      stream?.close();
+    };
   }, [id]);
 
   useEffect(() => {
@@ -550,9 +670,25 @@ export default function ReportDetails() {
 
       <Card>
         <CardContent className="p-6">
-        <h1 className="text-2xl font-bold mb-2">
-          #{report.ticket_no}
-        </h1>
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
+          <h1 className="text-2xl font-bold">
+            #{report.ticket_no}
+          </h1>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${
+            liveState === "live"         ? "bg-green-100 text-green-700"  :
+            liveState === "connecting"   ? "bg-blue-100 text-blue-700"    :
+            liveState === "reconnecting" ? "bg-amber-100 text-amber-700"  :
+            liveState === "offline"      ? "bg-gray-100 text-gray-700"    :
+            liveState === "error"        ? "bg-red-100 text-red-700"      :
+                                           "bg-slate-100 text-slate-700"
+          }`}>
+            {liveState === "live"         ? "Live"          :
+             liveState === "connecting"   ? "Connecting"    :
+             liveState === "reconnecting" ? "Reconnecting"  :
+             liveState === "offline"      ? "Offline"       :
+             liveState === "error"        ? "Unavailable"   : ""}
+          </span>
+        </div>
 
         <p className="text-lg text-gray-700">
           {report.title}
