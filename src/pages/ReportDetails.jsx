@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Textarea } from "../components/ui/textarea";
+import { Select } from "../components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../components/ui/sheet";
 
 export default function ReportDetails() {
   const { id } = useParams();
@@ -40,6 +42,13 @@ export default function ReportDetails() {
   const [liveState, setLiveState] = useState("idle");
   const snapshotTimerRef = useRef(null);
   const pendingUserLookupRef = useRef(new Set());
+  
+  // Reassign modal state
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [technicians, setTechnicians] = useState([]);
+  const [selectedTechId, setSelectedTechId] = useState("");
+  const [reassignLoading, setReassignLoading] = useState(false);
+  const [reassignError, setReassignError] = useState("");
 
   function rememberCommentAuthors(commentList) {
     if (!Array.isArray(commentList) || commentList.length === 0) return;
@@ -740,6 +749,87 @@ export default function ReportDetails() {
     return new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime();
   }
 
+  // Load technicians when reassign modal opens
+  async function loadTechnicians() {
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("id, full_name")
+        .eq("role", "technician")
+        .order("full_name");
+
+      if (error) {
+        console.error("Error loading technicians:", error);
+        setReassignError("Failed to load technicians");
+        return;
+      }
+
+      setTechnicians(data || []);
+      setReassignError("");
+    } catch (err) {
+      console.error("Unexpected error loading technicians:", err);
+      setReassignError("Failed to load technicians");
+    }
+  }
+
+  // Handle report reassignment
+  async function handleReassign() {
+    if (!selectedTechId) {
+      setReassignError("Please select a technician");
+      return;
+    }
+
+    if (selectedTechId === report.assigned_to) {
+      setReassignError("Report is already assigned to this technician");
+      return;
+    }
+
+    setReassignLoading(true);
+    setReassignError("");
+
+    try {
+      // Get old assigned technician name
+      const oldTechName = report.technician?.full_name || "Unassigned";
+      
+      // Get new technician name
+      const selectedTech = technicians.find(t => t.id === selectedTechId);
+      const newTechName = selectedTech?.full_name || "Unknown";
+
+      // Update the report
+      const { error: updateError } = await supabase
+        .from("reports")
+        .update({
+          assigned_to: selectedTechId,
+          assigned_at: new Date().toISOString()
+        })
+        .eq("id", report.id);
+
+      if (updateError) {
+        console.error("Error reassigning report:", updateError);
+        setReassignError("Failed to reassign report: " + updateError.message);
+        setReassignLoading(false);
+        return;
+      }
+
+      // Update local state
+      setReport(prev => ({
+        ...prev,
+        assigned_to: selectedTechId,
+        assigned_at: new Date().toISOString(),
+        technician: { full_name: newTechName }
+      }));
+
+      // Close modal
+      setShowReassignModal(false);
+      setSelectedTechId("");
+      setReassignLoading(false);
+    } catch (err) {
+      console.error("Unexpected error reassigning report:", err);
+      setReassignError("An unexpected error occurred");
+      setReassignLoading(false);
+    }
+  }
+
   return (
     <div className="p-2 px-2 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
@@ -1383,29 +1473,44 @@ export default function ReportDetails() {
       </CardContent>
       </Card>
 
-      {/* EDIT/DELETE (manager or report owner only) */}
-      {canManageReport && (
-        <>
-          <Button
-            className="mt-6 w-full"
-            onClick={() => navigate(`/report/${id}/edit`)}
-          >
-            Edit Report
-          </Button>
-          <Button
-            variant="destructive"
-            className="mt-6 w-full"
-            onClick={async () => {
-              if (confirm("Delete this report?")) {
-                await deleteReport(report);
-                navigate("/");
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </>
-      )}
+      <div className="flex gap-3">
+        {/* EDIT/DELETE/REASSIGN (manager or report owner only) */}
+        {canManageReport && (
+          <>
+            <Button
+              className="mt-6 w-full"
+              onClick={() => navigate(`/report/${id}/edit`)}
+            >
+              Edit Report
+            </Button>
+            
+            {userRole === "manager" && (
+              <Button
+                className="mt-6 w-full"
+                onClick={() => {
+                  loadTechnicians();
+                  setShowReassignModal(true);
+                }}
+              >
+                Reassign Report
+              </Button>
+            )}
+            
+            <Button
+              variant="destructive"
+              className="mt-6 w-full"
+              onClick={async () => {
+                if (confirm("Delete this report?")) {
+                  await deleteReport(report);
+                  navigate("/");
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </>
+            )}
+      </div>
 
       {/* Delete Button */}
       {/* <button
@@ -1526,6 +1631,79 @@ export default function ReportDetails() {
       </CardContent>
          </Card> 
 
+      {/* ===================== REASSIGN MODAL ===================== */}
+      <Sheet open={showReassignModal} onOpenChange={setShowReassignModal}>
+        <SheetContent side="right" className="w-full sm:w-96">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Reassign Reports</SheetTitle>
+            <SheetDescription>
+              Select a technician to reassign this report to
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-4">
+            {reassignError && (
+              <Alert className="border-red-200 bg-red-50 text-red-700">
+                <AlertDescription>{reassignError}</AlertDescription>
+              </Alert>
+            )}
+           
+            {report && (
+              <div className="space-y-2 p-6 bg-gray-50 rounded-lg">
+                <div className="text-sm">
+                  <p className="text-gray-500">Current Ticket</p>
+                  <p className="font-semibold">#{report.ticket_no} - {report.title}</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-500">Currently Assigned To</p>
+                  <p className="font-semibold">
+                    {report.technician?.full_name || "Unassigned"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2 p-6">
+              <label className="text-sm font-medium">Select New Technician</label>
+              <Select
+                value={selectedTechId}
+                onChange={(e) => setSelectedTechId(e.target.value)}
+                disabled={reassignLoading}
+                className="w-full"
+              >
+                <option value="">-- Choose a technician --</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.full_name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex gap-3 mt-6 p-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReassignModal(false);
+                  setSelectedTechId("");
+                  setReassignError("");
+                }}
+                disabled={reassignLoading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleReassign}
+                disabled={reassignLoading || !selectedTechId}
+                className="flex-1"
+              >
+                {reassignLoading ? "Reassigning..." : "Confirm"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
       
     </div>
   );

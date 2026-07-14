@@ -304,7 +304,7 @@ const projectChartData = Object.values(
   const currentLiveState = liveStateConfig[liveState] || liveStateConfig.idle;
   
   return (
-    <div>
+    <div >
       <div className="mb-4">
         <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ${currentLiveState.tone}`}>
           {currentLiveState.label}
