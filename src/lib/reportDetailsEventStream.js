@@ -19,8 +19,19 @@ function parseEventData(rawData) {
 }
 
 async function getStreamToken(userId, tokenFunctionName) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("No active Supabase session available for report details stream token request");
+  }
+
   const { data, error } = await supabase.functions.invoke(tokenFunctionName, {
     body: { userId },
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
   });
   if (error) throw new Error(error.message || "Failed to create stream token");
   if (!data?.streamToken) throw new Error("Token response missing streamToken");
