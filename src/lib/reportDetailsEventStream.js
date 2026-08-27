@@ -19,6 +19,8 @@ function parseEventData(rawData) {
 }
 
 async function getStreamToken(userId, tokenFunctionName) {
+  await supabase.auth.getUser();
+
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -28,7 +30,10 @@ async function getStreamToken(userId, tokenFunctionName) {
   }
 
   const { data, error } = await supabase.functions.invoke(tokenFunctionName, {
-    body: { userId },
+    body: {
+      userId,
+      accessToken: session.access_token,
+    },
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
