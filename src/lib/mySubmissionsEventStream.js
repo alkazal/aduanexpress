@@ -30,18 +30,40 @@ async function getStreamToken(userId, tokenFunctionName) {
     throw new Error("No active Supabase session available for stream token request");
   }
 
-  const { data, error } = await supabase.functions.invoke(tokenFunctionName, {
-    body: {
-      userId,
-      accessToken: session.access_token,
-    },
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!baseUrl || !anonKey) {
+    throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY");
+  }
+
+  const endpoint = `${baseUrl.replace(/\/$/, "")}/functions/v1/${tokenFunctionName}`;
+  const response = await fetch(endpoint, {
+    method: "POST",
     headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
       Authorization: `Bearer ${session.access_token}`,
     },
+    body: JSON.stringify({
+      userId,
+      accessToken: session.access_token,
+    }),
   });
 
-  if (error) {
-    throw new Error(error.message || "Failed to create stream token");
+  const rawBody = await response.text();
+  let data = null;
+  try {
+    data = rawBody ? JSON.parse(rawBody) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      data?.error ||
+      data?.message ||
+      `Failed to create stream token (${response.status})`;
+    throw new Error(message);
   }
 
   if (!data?.streamToken) {
