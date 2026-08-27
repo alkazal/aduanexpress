@@ -1,6 +1,6 @@
 //EditReport.jsx 27/11 424pm
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { supabase } from "../lib/supabase";
@@ -26,6 +26,8 @@ export default function EditReport() {
   const [progressMap, setProgressMap] = useState({});
   const [compressing, setCompressing] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [reportTypes, setReportTypes] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   function toDateTimeLocalValue(value) {
     if (!value) return "";
@@ -122,6 +124,96 @@ export default function EditReport() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadReportTypes() {
+      const localReportTypes = await db.reportTypes.toArray();
+      if (active) setReportTypes(localReportTypes || []);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("report_types")
+          .select("id, project_id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setReportTypes(data);
+          for (const rt of data) {
+            await db.reportTypes.put({
+              id: rt.id,
+              project_id: rt.project_id,
+              name: rt.name,
+              updated_at: rt.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadReportTypes();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDepartments() {
+      const localDepartments = await db.projectDepartments.toArray();
+      if (active) setDepartments(localDepartments || []);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("project_departments")
+          .select("id, project_id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setDepartments(data);
+          for (const dep of data) {
+            await db.projectDepartments.put({
+              id: dep.id,
+              project_id: dep.project_id,
+              name: dep.name,
+              updated_at: dep.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadDepartments();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const projectReportTypes = useMemo(() => {
+    if (!report?.project_id) return [];
+    return [...(reportTypes || [])]
+      .filter((rt) => rt.project_id === report.project_id)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [report?.project_id, reportTypes]);
+
+  const hasLegacyReportType = useMemo(() => {
+    if (!report?.report_type) return false;
+    return !projectReportTypes.some((rt) => rt.name === report.report_type);
+  }, [report?.report_type, projectReportTypes]);
+
+  const projectDepartments = useMemo(() => {
+    if (!report?.project_id) return [];
+    return [...(departments || [])]
+      .filter((dep) => dep.project_id === report.project_id)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [report?.project_id, departments]);
+
+  const hasLegacyDepartment = useMemo(() => {
+    if (!report?.department) return false;
+    return !projectDepartments.some((dep) => dep.name === report.department);
+  }, [report?.department, projectDepartments]);
 
   // -----------------------------
   // ADD NEW FILES
@@ -281,28 +373,58 @@ export default function EditReport() {
               onChange={(e) =>
                 setReport({ ...report, report_type: e.target.value })
               }
+              disabled={!report.project_id || projectReportTypes.length === 0}
             >
-              <option value="">Select</option>
-              <option value="Application">Application</option>
-              <option value="Incident">Incident</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Attendance">Attendance</option>
+              <option value="">
+                {!report.project_id
+                  ? "Select a project first"
+                  : projectReportTypes.length === 0
+                    ? "No report types for this project"
+                    : "Select"}
+              </option>
+              {hasLegacyReportType && (
+                <option value={report.report_type}>{report.report_type} (current)</option>
+              )}
+              {projectReportTypes.map((rt) => (
+                <option key={rt.id} value={rt.name}>{rt.name}</option>
+              ))}
             </Select>
+            {report.project_id && projectReportTypes.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No report types are configured for this project yet.
+              </p>
+            )}
           </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-project">Project</Label>
             <Select
               id="edit-project"
               value={report.project_id || ""}
               onChange={(e) => {
+                const nextProjectId = e.target.value;
                 const selected = projects.find((p) => p.id === e.target.value);
+                const nextProjectTypes = (reportTypes || []).filter(
+                  (rt) => rt.project_id === nextProjectId
+                );
+                const nextProjectDepartments = (departments || []).filter(
+                  (dep) => dep.project_id === nextProjectId
+                );
+                const currentTypeStillValid = nextProjectTypes.some(
+                  (rt) => rt.name === report.report_type
+                );
+                const currentDepartmentStillValid = nextProjectDepartments.some(
+                  (dep) => dep.name === report.department
+                );
+
                 setReport({
                   ...report,
-                  project_id: e.target.value,
-                  project_name: selected?.name || null
+                  project_id: nextProjectId,
+                  project_name: selected?.name || null,
+                  report_type: currentTypeStillValid ? report.report_type : "",
+                  department: currentDepartmentStillValid ? report.department : ""
                 });
               }}
             >
@@ -313,6 +435,37 @@ export default function EditReport() {
                 </option>
               ))}
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-department">Department</Label>
+            <Select
+              id="edit-department"
+              value={report.department || ""}
+              onChange={(e) =>
+                setReport({ ...report, department: e.target.value })
+              }
+              disabled={!report.project_id || projectDepartments.length === 0}
+            >
+              <option value="">
+                {!report.project_id
+                  ? "Select a project first"
+                  : projectDepartments.length === 0
+                    ? "No departments for this project"
+                    : "Select"}
+              </option>
+              {hasLegacyDepartment && (
+                <option value={report.department}>{report.department} (current)</option>
+              )}
+              {projectDepartments.map((dep) => (
+                <option key={dep.id} value={dep.name}>{dep.name}</option>
+              ))}
+            </Select>
+            {report.project_id && projectDepartments.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No departments are configured for this project yet.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -343,6 +496,18 @@ export default function EditReport() {
               onChange={(e) =>
                 setReport({ ...report, description: e.target.value })
               }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-location">Location (Optional)</Label>
+            <Input
+              id="edit-location"
+              value={report.location || ""}
+              onChange={(e) =>
+                setReport({ ...report, location: e.target.value })
+              }
+              placeholder="Enter location"
             />
           </div>
 

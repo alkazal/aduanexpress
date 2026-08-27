@@ -82,9 +82,9 @@ export async function syncReports() {
       return;
     }
 
-    /* =========================================================
-       0. SYNC PROJECTS (for selectors + offline display)
-    ========================================================== */
+     /* =========================================================
+       0. SYNC PROJECTS + REPORT TYPES + DEPARTMENTS (for selectors + offline display)
+     ========================================================== */
     try {
       const { data: onlineProjects, error: projErr } = await supabase
         .from("projects")
@@ -102,6 +102,46 @@ export async function syncReports() {
       }
     } catch (err) {
       console.warn("Projects sync failed:", err);
+    }
+
+    try {
+      const { data: onlineReportTypes, error: typeErr } = await supabase
+        .from("report_types")
+        .select("id, project_id, name, updated_at")
+        .order("name", { ascending: true });
+
+      if (!typeErr && onlineReportTypes) {
+        for (const rt of onlineReportTypes) {
+          await db.reportTypes.put({
+            id: rt.id,
+            project_id: rt.project_id,
+            name: rt.name,
+            updated_at: rt.updated_at || null
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Report types sync failed:", err);
+    }
+
+    try {
+      const { data: onlineDepartments, error: depErr } = await supabase
+        .from("project_departments")
+        .select("id, project_id, name, updated_at")
+        .order("name", { ascending: true });
+
+      if (!depErr && onlineDepartments) {
+        for (const dep of onlineDepartments) {
+          await db.projectDepartments.put({
+            id: dep.id,
+            project_id: dep.project_id,
+            name: dep.name,
+            updated_at: dep.updated_at || null
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Project departments sync failed:", err);
     }
 
     /* =========================================================
@@ -205,6 +245,26 @@ export async function syncReports() {
       .filter(r => r && (r.synced === false || r.synced === "false"))
       .toArray();
 
+    const allReportTypes = await db.reportTypes.toArray();
+    const reportTypeNamesByProject = new Map();
+    for (const rt of allReportTypes) {
+      if (!rt?.project_id || !rt?.name) continue;
+      if (!reportTypeNamesByProject.has(rt.project_id)) {
+        reportTypeNamesByProject.set(rt.project_id, new Set());
+      }
+      reportTypeNamesByProject.get(rt.project_id).add(rt.name);
+    }
+
+    const allProjectDepartments = await db.projectDepartments.toArray();
+    const departmentNamesByProject = new Map();
+    for (const dep of allProjectDepartments) {
+      if (!dep?.project_id || !dep?.name) continue;
+      if (!departmentNamesByProject.has(dep.project_id)) {
+        departmentNamesByProject.set(dep.project_id, new Set());
+      }
+      departmentNamesByProject.get(dep.project_id).add(dep.name);
+    }
+
     console.log("Unsynced reports:", unsyncedReports.length);
 
     for (const report of unsyncedReports) {
@@ -216,6 +276,36 @@ export async function syncReports() {
 
       const reportId = report.id;
       const isFirstServerSync = !report._synced_once;
+
+      const allowedTypes = reportTypeNamesByProject.get(report.project_id) || new Set();
+      const hasConfiguredTypes = allowedTypes.size > 0;
+      const hasTypeSelected = typeof report.report_type === "string" && report.report_type.trim() !== "";
+      const isTypeValid = hasTypeSelected && allowedTypes.has(report.report_type);
+
+      if (hasConfiguredTypes && !isTypeValid) {
+        const syncError = "Invalid report type for selected project";
+        console.warn(`SYNC: ${syncError} (report ${reportId})`);
+        await db.reports.update(reportId, {
+          synced: false,
+          _sync_error: syncError
+        });
+        continue;
+      }
+
+      const allowedDepartments = departmentNamesByProject.get(report.project_id) || new Set();
+      const hasConfiguredDepartments = allowedDepartments.size > 0;
+      const hasDepartmentSelected = typeof report.department === "string" && report.department.trim() !== "";
+      const isDepartmentValid = hasDepartmentSelected && allowedDepartments.has(report.department);
+
+      if (hasConfiguredDepartments && !isDepartmentValid) {
+        const syncError = "Invalid department for selected project";
+        console.warn(`SYNC: ${syncError} (report ${reportId})`);
+        await db.reports.update(reportId, {
+          synced: false,
+          _sync_error: syncError
+        });
+        continue;
+      }
 
       // ----------------------------------------------------------
       // Build safe payload (NEVER overwrite user_id if exists online)
@@ -325,6 +415,7 @@ export async function syncReports() {
         await db.reports.update(reportId, {
           synced: true,
           _synced_once: true,
+          _sync_error: null,
         });
 
         /* -----------------------------------------

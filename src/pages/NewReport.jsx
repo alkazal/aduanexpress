@@ -23,8 +23,10 @@ export default function NewReport() {
   const navigate = useNavigate();
 
   const [reportType, setReportType] = useState("");
+  const [department, setDepartment] = useState("");
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [requestorName, setRequestorName] = useState("");
   const [requestorPhoneNo, setRequestorPhoneNo] = useState("");
@@ -36,10 +38,15 @@ export default function NewReport() {
   const [progressMap, setProgressMap] = useState({});
   const [compressing, setCompressing] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [reportTypes, setReportTypes] = useState([]);
+  const [projectReportTypes, setProjectReportTypes] = useState([]);
+  const [projectDepartments, setProjectDepartments] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [requestorSuggestions, setRequestorSuggestions] = useState([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const nameWrapperRef = useRef(null);
+  const prevReportTypeRef = useRef("");
 
   useEffect(() => {
     try {
@@ -48,8 +55,10 @@ export default function NewReport() {
 
       const draft = JSON.parse(rawDraft);
       if (typeof draft.reportType === "string") setReportType(draft.reportType);
+      if (typeof draft.department === "string") setDepartment(draft.department);
       if (typeof draft.projectId === "string") setProjectId(draft.projectId);
       if (typeof draft.title === "string") setTitle(draft.title);
+      if (typeof draft.location === "string") setLocation(draft.location);
       if (typeof draft.description === "string") setDescription(draft.description);
       if (typeof draft.requestorName === "string") setRequestorName(draft.requestorName);
       if (typeof draft.requestorPhoneNo === "string") setRequestorPhoneNo(draft.requestorPhoneNo);
@@ -64,8 +73,10 @@ export default function NewReport() {
       // Files are excluded because File objects are not safely serializable in localStorage.
       const draft = {
         reportType,
+        department,
         projectId,
         title,
+        location,
         description,
         requestorName,
         requestorPhoneNo,
@@ -77,8 +88,10 @@ export default function NewReport() {
     }
   }, [
     reportType,
+    department,
     projectId,
     title,
+    location,
     description,
     requestorName,
     requestorPhoneNo,
@@ -189,6 +202,111 @@ export default function NewReport() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadReportTypes() {
+      const localReportTypes = await db.reportTypes.toArray();
+      if (active) setReportTypes(localReportTypes || []);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("report_types")
+          .select("id, project_id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setReportTypes(data);
+          for (const rt of data) {
+            await db.reportTypes.put({
+              id: rt.id,
+              project_id: rt.project_id,
+              name: rt.name,
+              updated_at: rt.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadReportTypes();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const filtered = (reportTypes || [])
+      .filter((rt) => rt.project_id === projectId)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    setProjectReportTypes(filtered);
+
+    if (reportType && !filtered.some((rt) => rt.name === reportType)) {
+      setReportType("");
+    }
+  }, [projectId, reportTypes, reportType]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDepartments() {
+      const localDepartments = await db.projectDepartments.toArray();
+      if (active) setDepartments(localDepartments || []);
+
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("project_departments")
+          .select("id, project_id, name, updated_at")
+          .order("name", { ascending: true });
+
+        if (!error && data) {
+          if (active) setDepartments(data);
+          for (const dep of data) {
+            await db.projectDepartments.put({
+              id: dep.id,
+              project_id: dep.project_id,
+              name: dep.name,
+              updated_at: dep.updated_at || null
+            });
+          }
+        }
+      }
+    }
+
+    loadDepartments();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const filtered = (departments || [])
+      .filter((dep) => dep.project_id === projectId)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    setProjectDepartments(filtered);
+
+    if (department && !filtered.some((dep) => dep.name === department)) {
+      setDepartment("");
+    }
+  }, [projectId, departments, department]);
+
+  useEffect(() => {
+    const previousReportType = prevReportTypeRef.current;
+
+    setTitle((currentTitle) => {
+      const shouldAutofill =
+        currentTitle.trim() === "" ||
+        (previousReportType && currentTitle === previousReportType);
+
+      if (!shouldAutofill) return currentTitle;
+      return reportType || "";
+    });
+
+    prevReportTypeRef.current = reportType;
+  }, [reportType]);
+
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -235,6 +353,16 @@ export default function NewReport() {
       return;
     }
 
+    if (!reportType) {
+      setError("Please select a report type.");
+      return;
+    }
+
+    if (!department) {
+      setError("Please select a department.");
+      return;
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -254,9 +382,11 @@ export default function NewReport() {
     await db.reports.put({
       id: reportId,
       report_type: reportType,
+      department,
       project_id: projectId,
       project_name: selectedProject?.name || null,
       title,
+      location: location || null,
       description,
       requestor_name: requestorName,
       requestor_phone_no: requestorPhoneNo,
@@ -292,8 +422,10 @@ export default function NewReport() {
 
   const handleClearDraft = () => {
     setReportType("");
+    setDepartment("");
     setProjectId("");
     setTitle("");
+    setLocation("");
     setDescription("");
     setRequestorName("");
     setRequestorPhoneNo("");
@@ -336,28 +468,16 @@ return (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="report-type">Report Type</Label>
-                  <Select
-                    id="report-type"
-                    value={reportType}
-                    onChange={(e) => setReportType(e.target.value)}
-                  >
-                    <option value="">Select a type</option>
-                    <option value="Application">Application</option>
-                    <option value="Incident">Incident</option>
-                    <option value="Maintenance">Maintenance</option>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="project">Project</Label>
+                  <Label htmlFor="project">Category</Label>
                   <Select
                     id="project"
                     value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
+                    onChange={(e) => {
+                      setProjectId(e.target.value);
+                    }}
                     required
                   >
-                    <option value="">Select a project</option>
+                    <option value="">Select a category</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -366,6 +486,60 @@ return (
                     <p className="text-sm text-muted-foreground">No projects available.</p>
                   )}
                 </div>
+              
+                <div className="space-y-2">
+                  <Label htmlFor="report-type">Report Type</Label>
+                  <Select
+                    id="report-type"
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                    disabled={!projectId || projectReportTypes.length === 0}
+                    required
+                  >
+                    <option value="">
+                      {!projectId
+                        ? "Select a project first"
+                        : projectReportTypes.length === 0
+                          ? "No report types for this project"
+                          : "Select a type"}
+                    </option>
+                    {projectReportTypes.map((rt) => (
+                      <option key={rt.id} value={rt.name}>{rt.name}</option>
+                    ))}
+                  </Select>
+                  {projectId && projectReportTypes.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No report types are configured for this project yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select
+                  id="department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  disabled={!projectId || projectDepartments.length === 0}
+                  required
+                >
+                  <option value="">
+                    {!projectId
+                      ? "Select a project first"
+                      : projectDepartments.length === 0
+                        ? "No departments for this project"
+                        : "Select a department"}
+                  </option>
+                  {projectDepartments.map((dep) => (
+                    <option key={dep.id} value={dep.name}>{dep.name}</option>
+                  ))}
+                </Select>
+                {projectId && projectDepartments.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No departments are configured for this project yet.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -379,7 +553,17 @@ return (
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="location">Location (Optional)</Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Enter location"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Reference and Problem (To be completed by the Originator/ Complainant)</Label>
                 <Textarea
                   id="description"
                   rows="4"

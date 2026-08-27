@@ -55,8 +55,11 @@ export default function MySubmissions() {
       return;
     }
 
-    let onlineData = [];
     let list = [];
+
+    const localReportsForMerge = userRole === "manager"
+      ? await db.reports.toArray()
+      : await db.reports.where("user_id").equals(userId).toArray();
 
     if (navigator.onLine) {
       let query;
@@ -95,6 +98,36 @@ export default function MySubmissions() {
           project_name: r.project?.name || r.project_name || r.project_id || null,
           project_key: r.project_id || r.project?.name || r.project_name || "NO_PROJECT"
         }));
+
+        const onlineMap = new Map(list.map((r) => [r.id, r]));
+        const localMapped = (localReportsForMerge || []).map((r) => ({
+          ...r,
+          submitted_by: userRole === "manager"
+            ? r.reporter_name || "User"
+            : r.reporter_name || "You",
+          assigned_to: r.technician_name,
+          project_name: r.project_name || r.project_id || null,
+          project_key: r.project_id || r.project_name || "NO_PROJECT"
+        }));
+
+        for (const localReport of localMapped) {
+          const shouldOverlay =
+            localReport.synced === false ||
+            localReport.synced === "false" ||
+            Boolean(localReport._sync_error) ||
+            localReport.to_delete === true;
+
+          if (!onlineMap.has(localReport.id) || shouldOverlay) {
+            onlineMap.set(localReport.id, {
+              ...(onlineMap.get(localReport.id) || {}),
+              ...localReport,
+            });
+          }
+        }
+
+        list = Array.from(onlineMap.values()).sort(
+          (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        );
       }
     } else {
 
@@ -308,6 +341,7 @@ export default function MySubmissions() {
   };
 
   const currentLiveState = liveStateConfig[liveState] || liveStateConfig.idle;
+  const blockedSyncItems = filteredItems.filter((r) => Boolean(r._sync_error));
 
   return (
     <div>
@@ -570,6 +604,14 @@ export default function MySubmissions() {
         </Alert>
       )}
 
+      {blockedSyncItems.length > 0 && (
+        <Alert className="mb-2 border-amber-200 bg-amber-50 text-amber-800">
+          <AlertDescription>
+            {blockedSyncItems.length} report(s) need attention before sync. Open a report and correct the project report type.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {loading && (
         <Alert>
           <AlertDescription>Loading...</AlertDescription>
@@ -597,6 +639,11 @@ export default function MySubmissions() {
                     <StatusBadge status={x.status} className="flex-shrink-0" />
                   </div>
                   <h3 className="mt-1 text-sm font-semibold text-gray-900 break-words line-clamp-2">{x.title}</h3>
+                  {x._sync_error && (
+                    <Badge className="mt-2 bg-amber-100 text-amber-800 border border-amber-200">
+                      Sync blocked: {x._sync_error}
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="mt-2 text-[11px] text-gray-600 space-y-0.5">
@@ -641,6 +688,11 @@ export default function MySubmissions() {
 
                 <TableCell className="px-4 py-3">
                   <div className="font-semibold">{x.title}</div>
+                  {x._sync_error && (
+                    <Badge className="mt-1 bg-amber-100 text-amber-800 border border-amber-200">
+                      Sync blocked
+                    </Badge>
+                  )}
                   <div className="text-gray-500 text-xs">
                     {x.submitted_by}
                   </div>

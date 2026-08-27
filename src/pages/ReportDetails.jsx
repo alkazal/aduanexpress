@@ -749,6 +749,441 @@ export default function ReportDetails() {
     return new Date(comment.updated_at).getTime() > new Date(comment.created_at).getTime();
   }
 
+  function formatDateTime(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString();
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function toMultilineHtml(value) {
+    return escapeHtml(value || "-").replace(/\n/g, "<br />");
+  }
+
+  function buildReportRow(label, value) {
+    return `<tr><th>${escapeHtml(label)}</th><td>${value}</td></tr>`;
+  }
+
+  function openPrintPreview() {
+    if (!report) return;
+
+    const temporaryObjectUrls = [];
+
+    const combinedHistory = [
+      ...(report.history || []),
+      ...(report._status_changes || [])
+    ].filter((entry) => entry?.changed_at);
+
+    const assignmentHistory = [...combinedHistory]
+      .filter((entry) => {
+        const oldStatus = String(entry.old_status || "").toLowerCase();
+        const newStatus = String(entry.new_status || "").toLowerCase();
+        return (
+          newStatus.includes("assign") ||
+          (oldStatus === "submitted" && newStatus === "open")
+        );
+      })
+      .sort((a, b) => new Date(a.changed_at) - new Date(b.changed_at));
+
+    const assignedEntry = assignmentHistory[0] || null;
+
+    const closedHistory = [...combinedHistory]
+      .filter((entry) => String(entry.new_status || "").toLowerCase() === "closed")
+      .sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at));
+
+    const closedEntry = closedHistory[0] || null;
+
+    const actionRows = [...(comments || [])]
+      .filter((comment) => !comment.is_internal)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .map((comment, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${toMultilineHtml(comment.message || "-")}</td>
+          <td>${escapeHtml(formatDateTime(comment.created_at))}</td>
+          <td>${escapeHtml(comment.user?.full_name || userNameById[comment.user_id] || "-")}</td>
+        </tr>
+      `)
+      .join("");
+
+    const printableAttachments = (attachments || []).map((att) => {
+      let fileUrl = att.file_url || "";
+
+      if (!fileUrl && (att.file || att.file_data)) {
+        const blobUrl = URL.createObjectURL(att.file || att.file_data);
+        temporaryObjectUrls.push(blobUrl);
+        fileUrl = blobUrl;
+      }
+
+      return {
+        id: att.id,
+        file_name: att.file_name || "attachment",
+        mime_type: att.mime_type || "",
+        file_url: fileUrl,
+        isImage: isImageFile(att),
+      };
+    });
+
+    const imageAttachmentBlocks = printableAttachments
+      .filter((att) => att.isImage && att.file_url)
+      .map((att) => `
+        <div class="attachment-card">
+          <img src="${escapeHtml(att.file_url)}" alt="${escapeHtml(att.file_name)}" />
+          <div class="attachment-caption">${escapeHtml(att.file_name)}</div>
+        </div>
+      `)
+      .join("");
+
+    const documentAttachmentRows = printableAttachments
+      .filter((att) => !att.isImage)
+      .map((att, index) => {
+        const linkCell = att.file_url
+          ? `<a href="${escapeHtml(att.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(att.file_name)}</a>`
+          : `${escapeHtml(att.file_name)} <span class="muted">(link unavailable offline)</span>`;
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${linkCell}</td>
+            <td>Referenced document. Include this file with the printed report package.</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const projectName = report.project_name || report.project_id || "-";
+    const logoUrl = `${window.location.origin}/AE-192x192.png`;
+    const generatedAt = formatDateTime(new Date().toISOString());
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Report #${escapeHtml(report.ticket_no || "-")}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              padding: 24px 40px;
+              font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+              color: #111827;
+              background: #f9fafb;
+            }
+            .paper {
+              max-width: 980px;
+              margin: 0 auto;
+              background: #fff;
+              border: 1px solid #e5e7eb;
+              padding: 28px 40px;
+            }
+            .toolbar {
+              display: flex;
+              justify-content: flex-end;
+              margin-bottom: 16px;
+            }
+            .toolbar button {
+              border: 0;
+              background: #2563eb;
+              color: #fff;
+              padding: 10px 14px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+            }
+            .header {
+              display: grid;
+              grid-template-columns: 1fr 2fr 1fr;
+              align-items: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #e5e7eb;
+              padding-bottom: 14px;
+              gap: 12px;
+            }
+            .logo-wrap {
+              text-align: center;
+            }
+            .logo-wrap img {
+              width: 58px;
+              height: 58px;
+              object-fit: contain;
+            }
+            .title-wrap {
+              text-align: center;
+            }
+            .title-wrap h1 {
+              margin: 0;
+              font-size: 22px;
+              letter-spacing: 0.04em;
+            }
+            .title-wrap p {
+              margin: 4px 0 0;
+              color: #4b5563;
+              font-size: 13px;
+            }
+            .ticket-wrap {
+              text-align: right;
+              font-weight: 700;
+              font-size: 15px;
+            }
+            .section-title {
+              margin: 16px 0 8px;
+              font-size: 14px;
+              font-weight: 700;
+              color: #111827;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+            }
+            th, td {
+              border: 1px solid #d1d5db;
+              padding: 8px 10px;
+              text-align: left;
+              vertical-align: top;
+              font-size: 13px;
+            }
+            th {
+              width: 28%;
+              background: #f3f4f6;
+              font-weight: 700;
+            }
+            .narrow th {
+              width: auto;
+            }
+            .muted {
+              color: #6b7280;
+              font-style: italic;
+            }
+            .attachments-grid {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 12px;
+            }
+            .attachment-card {
+              border: 1px solid #d1d5db;
+              border-radius: 6px;
+              padding: 8px;
+            }
+            .attachment-card img {
+              width: 100%;
+              max-height: 280px;
+              object-fit: contain;
+              background: #f9fafb;
+              border-radius: 4px;
+            }
+            .attachment-caption {
+              font-size: 12px;
+              margin-top: 6px;
+              word-break: break-word;
+            }
+            .print-footer {
+              margin-top: 22px;
+              padding-top: 10px;
+              border-top: 1px solid #d1d5db;
+              font-size: 11px;
+              color: #4b5563;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 8px;
+            }
+            .print-page-current::after {
+              content: counter(page);
+            }
+            .print-page-total::after {
+              content: counter(pages);
+            }
+            @media print {
+              @page {
+                size: auto;
+                margin: 14mm;
+              }
+              body {
+                background: #fff;
+                padding: 0;
+              }
+              .paper {
+                border: 0;
+                max-width: 100%;
+                padding: 0;
+              }
+              .toolbar {
+                display: none;
+              }
+              .print-footer {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: #fff;
+                margin: 0;
+                padding: 8px 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="paper">
+            <div class="header">
+              <div></div>
+              <div class="title-wrap">
+                <div class="logo-wrap">
+                  <img src="${logoUrl}" alt="Logo" />
+                </div>
+                <h1>ADUAN EXPRESS</h1>
+                <p>${escapeHtml(projectName)}</p>
+              </div>
+              <div class="ticket-wrap">Ticket No: #${escapeHtml(report.ticket_no || "-")}</div>
+            </div>
+
+            <div class="section-title">Report Overview</div>
+            <table>
+              ${buildReportRow("Report Title", escapeHtml(report.title || "-"))}
+              ${buildReportRow("Description", toMultilineHtml(report.description || "-"))}
+              ${buildReportRow("Department", escapeHtml(report.department || "-"))}
+              ${buildReportRow("Location", escapeHtml(report.location || "-"))}
+              ${buildReportRow("Status", escapeHtml(report.status || "-"))}
+              ${buildReportRow("Maintenance Level", escapeHtml(report.maintenance_level ? `Level ${report.maintenance_level}` : "Not set"))}
+              ${buildReportRow("Submitted By", escapeHtml(report.reporter?.full_name || report.reporter_name || "-"))}
+              ${buildReportRow("Reporter Name", escapeHtml(report.requestor_name || "-"))}
+              ${buildReportRow("Phone No", escapeHtml(report.requestor_phone_no || "-"))}
+              ${buildReportRow("Datetime Reported", escapeHtml(formatDateTime(report.request_datetime)))}
+            </table>
+
+            <div class="section-title">Classification</div>
+            <table>
+              ${buildReportRow("Project", escapeHtml(projectName))}
+              ${buildReportRow("Report Type", escapeHtml(report.report_type || "-"))}
+            </table>
+
+            <div class="section-title">Assignment</div>
+            <table>
+              ${buildReportRow("Assigned By", escapeHtml(assignedEntry?.changed_by_name || assignedEntry?.changed_by || "-"))}
+              ${buildReportRow("Date Assigned", escapeHtml(formatDateTime(report.assigned_at || assignedEntry?.changed_at)))}
+              ${buildReportRow("Technician", escapeHtml(report.technician?.full_name || report.technician_name || "-"))}
+            </table>
+
+            <div class="section-title">Action & Solution</div>
+            <table class="narrow">
+              <thead>
+                <tr>
+                  <th style="width: 56px;">No</th>
+                  <th>Action / Solution</th>
+                  <th style="width: 190px;">Datetime</th>
+                  <th style="width: 190px;">Technician</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${actionRows || '<tr><td colspan="4" class="muted">No action/solution records yet.</td></tr>'}
+              </tbody>
+            </table>
+
+            <div class="section-title">Verification / Closed</div>
+            <table>
+              ${buildReportRow("Manager Name", escapeHtml(
+                String(report.status || "").toLowerCase() === "closed"
+                  ? (closedEntry?.changed_by_name || closedEntry?.changed_by || report.updated_by_name || report.updated_by || "-")
+                  : "-"
+              ))}
+              ${buildReportRow("Datetime", escapeHtml(
+                String(report.status || "").toLowerCase() === "closed"
+                  ? formatDateTime(closedEntry?.changed_at || report.closed_at)
+                  : "-"
+              ))}
+            </table>
+
+            <div class="section-title">Attachments</div>
+            ${imageAttachmentBlocks
+              ? `<div class="attachments-grid">${imageAttachmentBlocks}</div>`
+              : '<p class="muted">No image attachments.</p>'}
+
+            <div class="section-title">Referenced Documents</div>
+            <table class="narrow">
+              <thead>
+                <tr>
+                  <th style="width: 56px;">No</th>
+                  <th>Document</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${documentAttachmentRows || '<tr><td colspan="3" class="muted">No non-image documents.</td></tr>'}
+              </tbody>
+            </table>
+
+            <div class="print-footer">
+              <span>Generated: ${escapeHtml(generatedAt)}</span>
+              <span>
+                Page <span class="print-page-current"></span> of <span class="print-page-total"></span>
+              </span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+
+    const cleanup = () => {
+      temporaryObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    };
+
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc || !iframe.contentWindow) {
+      cleanup();
+      alert("Unable to prepare print preview. Please try again.");
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    const printWindow = iframe.contentWindow;
+    const handleAfterPrint = () => {
+      printWindow.removeEventListener("afterprint", handleAfterPrint);
+      cleanup();
+    };
+
+    printWindow.addEventListener("afterprint", handleAfterPrint);
+
+    window.setTimeout(() => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (error) {
+        console.error("Print failed:", error);
+        cleanup();
+      }
+    }, 150);
+
+    // Fallback cleanup in case afterprint does not fire in some browsers.
+    window.setTimeout(cleanup, 60000);
+  }
+
   // Load technicians when reassign modal opens
   async function loadTechnicians() {
     try {
@@ -842,6 +1277,14 @@ export default function ReportDetails() {
         ← Back
       </Button>
 
+      <Button
+        onClick={openPrintPreview}
+        variant="outline"
+        className="mb-4 ml-3"
+      >
+        Print / Download Report
+      </Button>
+
       <Card>
         <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -923,6 +1366,21 @@ export default function ReportDetails() {
             <p className="font-medium">
               {report.project_name || report.project_id}
             </p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Report Type</p>
+            <p className="font-medium">{report.report_type || "-"}</p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Department</p>
+            <p className="font-medium">{report.department || "-"}</p>
+          </div>
+
+          <div>
+            <p className="text-gray-500">Location</p>
+            <p className="font-medium">{report.location || "-"}</p>
           </div>
 
           <div>
@@ -1080,7 +1538,7 @@ export default function ReportDetails() {
       <Card className="mt-6">
       <CardContent className="p-6">
 
-      <h2 className="text-lg font-semibold mb-4">Communication</h2>
+      <h2 className="text-lg font-semibold mb-4">Action & Solution</h2>
 
       {/* Tabs */}
       <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
@@ -1091,7 +1549,7 @@ export default function ReportDetails() {
             activeTab === "public" ? "bg-white shadow" : ""
           }`}
         >
-          Public Reply
+          Problem Cause & Corrective Action
         </Button>
 
         {isStaff && (
@@ -1113,7 +1571,7 @@ export default function ReportDetails() {
           <Textarea
             value={publicReply}
             onChange={(e) => setPublicReply(e.target.value)}
-            placeholder="Type your response to the user..."
+            placeholder="Type cause of problem and corrective action here..."
             rows={4}
           />
 

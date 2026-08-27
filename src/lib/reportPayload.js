@@ -7,6 +7,8 @@ const REPORT_SERVER_FIELDS = [
   "requestor_phone_no",
   "request_datetime",
   "report_type",
+  "department",
+  "location",
   "project_id",
   "status",
   "assigned_to",

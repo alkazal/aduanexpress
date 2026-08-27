@@ -60,17 +60,15 @@ Deno.serve(async (req) => {
   }
 
   const authHeader = req.headers.get("Authorization");
-  const body = await req.json().catch(() => ({}));
-  const accessToken = typeof body?.accessToken === "string" ? body.accessToken : "";
-  const effectiveAuthorization = authHeader || (accessToken ? `Bearer ${accessToken}` : "");
-
-  if (!effectiveAuthorization) {
-    return jsonError(401, "Missing Authorization header or accessToken");
+  if (!authHeader) {
+    return jsonError(401, "Missing Authorization header");
   }
+
+  const body = await req.json().catch(() => ({}));
 
   const userClient = createClient(supabaseUrl, anonKey, {
     global: {
-      headers: { Authorization: effectiveAuthorization },
+      headers: { Authorization: authHeader },
     },
   });
 

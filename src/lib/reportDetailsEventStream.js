@@ -45,7 +45,6 @@ async function getStreamToken(userId, tokenFunctionName) {
     },
     body: JSON.stringify({
       userId,
-      accessToken: session.access_token,
     }),
   });
 
