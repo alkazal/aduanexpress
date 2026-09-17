@@ -49,8 +49,8 @@ function AppRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/test" element={<TestSession />} />
-        <Route path="/report/:id" element={<ReportDetails />} />
-        <Route path="/report/:id/edit" element={<EditReport />} />
+        <Route path="/report/:id" element={<ProtectedRoute><ReportDetails /></ProtectedRoute>} />
+        <Route path="/report/:id/edit" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />
 
         {/* Protected routes */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />

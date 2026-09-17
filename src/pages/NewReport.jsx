@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { syncReports } from "../lib/sync";
 import { compressImage } from "../utils/imageCompressor";
+import { canCurrentUserUseProject, getCurrentUserContext, getAccessibleProjectIdsForCurrentUser, loadProjectsForCurrentUser } from "../lib/projectAccess";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -111,9 +112,60 @@ export default function NewReport() {
 
   useEffect(() => {
     let active = true;
+
+    async function prefillRequestorFromProfile() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user;
+      if (!user || !active) return;
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("full_name, contact_no")
+        .eq("id", user.id)
+        .single();
+
+      const fallbackName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.user_metadata?.display_name ||
+        "";
+
+      const profileName = (profile?.full_name || "").trim() || fallbackName.trim();
+      const profilePhone = (profile?.contact_no || "").trim() || (user.phone || "").trim();
+
+      if (!active) return;
+
+      if (profileName) {
+        setRequestorName((current) => (current.trim() ? current : profileName));
+      }
+
+      if (profilePhone) {
+        setRequestorPhoneNo((current) => (current.trim() ? current : profilePhone));
+      }
+    }
+
+    prefillRequestorFromProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     async function loadRequestors() {
+      const { role } = await getCurrentUserContext();
+      const allowedProjects = role === "manager" ? null : await loadProjectsForCurrentUser();
+      const allowedProjectIds = allowedProjects ? new Set(allowedProjects.map((project) => project.id)) : null;
+
       // Load from local Dexie first
-      const localReports = await db.reports.toArray();
+      const localReports = (await db.reports.toArray()).filter((report) => {
+        if (!allowedProjectIds) return true;
+        return allowedProjectIds.has(report.project_id);
+      });
       const mergedMap = new Map();
       for (const r of localReports) {
         if (r.requestor_name) {
@@ -129,10 +181,11 @@ export default function NewReport() {
       if (navigator.onLine) {
         const { data } = await supabase
           .from("reports")
-          .select("requestor_name, requestor_phone_no")
+          .select("requestor_name, requestor_phone_no, project_id")
           .not("requestor_name", "is", null);
         if (active && data) {
           for (const r of data) {
+            if (allowedProjectIds && !allowedProjectIds.has(r.project_id)) continue;
             if (r.requestor_name) {
               const key = r.requestor_name.toLowerCase();
               if (!mergedMap.has(key)) {
@@ -174,26 +227,8 @@ export default function NewReport() {
     let active = true;
 
     async function loadProjects() {
-      const localProjects = await db.projects.toArray();
-      if (active) setProjects(localProjects);
-
-      if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from("projects")
-          .select("id, name, updated_at")
-          .order("name", { ascending: true });
-
-        if (!error && data) {
-          if (active) setProjects(data);
-          for (const p of data) {
-            await db.projects.put({
-              id: p.id,
-              name: p.name,
-              updated_at: p.updated_at || null
-            });
-          }
-        }
-      }
+      const visibleProjects = await loadProjectsForCurrentUser();
+      if (active) setProjects(visibleProjects);
     }
 
     loadProjects();
@@ -203,10 +238,26 @@ export default function NewReport() {
   }, []);
 
   useEffect(() => {
+    if (projects.length === 0) {
+      if (projectId) setProjectId("");
+      return;
+    }
+
+    if (!projectId || !projects.some((project) => project.id === projectId)) {
+      setProjectId(projects[0].id);
+    }
+  }, [projects, projectId]);
+
+  useEffect(() => {
     let active = true;
 
     async function loadReportTypes() {
-      const localReportTypes = await db.reportTypes.toArray();
+      const accessibleProjectIds = await getAccessibleProjectIdsForCurrentUser({ preferOnline: false });
+      const allowedSet = accessibleProjectIds ? new Set(accessibleProjectIds) : null;
+      const localReportTypes = (await db.reportTypes.toArray()).filter((reportType) => {
+        if (!allowedSet) return true;
+        return allowedSet.has(reportType.project_id);
+      });
       if (active) setReportTypes(localReportTypes || []);
 
       if (navigator.onLine) {
@@ -216,8 +267,13 @@ export default function NewReport() {
           .order("name", { ascending: true });
 
         if (!error && data) {
-          if (active) setReportTypes(data);
-          for (const rt of data) {
+          const filteredData = (data || []).filter((reportType) => {
+            if (!allowedSet) return true;
+            return allowedSet.has(reportType.project_id);
+          });
+
+          if (active) setReportTypes(filteredData);
+          for (const rt of filteredData) {
             await db.reportTypes.put({
               id: rt.id,
               project_id: rt.project_id,
@@ -242,6 +298,16 @@ export default function NewReport() {
 
     setProjectReportTypes(filtered);
 
+    if (filtered.length === 0) {
+      if (reportType) setReportType("");
+      return;
+    }
+
+    if (!reportType || !filtered.some((rt) => rt.name === reportType)) {
+      setReportType(filtered[0].name);
+      return;
+    }
+
     if (reportType && !filtered.some((rt) => rt.name === reportType)) {
       setReportType("");
     }
@@ -251,7 +317,12 @@ export default function NewReport() {
     let active = true;
 
     async function loadDepartments() {
-      const localDepartments = await db.projectDepartments.toArray();
+      const accessibleProjectIds = await getAccessibleProjectIdsForCurrentUser({ preferOnline: false });
+      const allowedSet = accessibleProjectIds ? new Set(accessibleProjectIds) : null;
+      const localDepartments = (await db.projectDepartments.toArray()).filter((department) => {
+        if (!allowedSet) return true;
+        return allowedSet.has(department.project_id);
+      });
       if (active) setDepartments(localDepartments || []);
 
       if (navigator.onLine) {
@@ -261,8 +332,13 @@ export default function NewReport() {
           .order("name", { ascending: true });
 
         if (!error && data) {
-          if (active) setDepartments(data);
-          for (const dep of data) {
+          const filteredData = (data || []).filter((department) => {
+            if (!allowedSet) return true;
+            return allowedSet.has(department.project_id);
+          });
+
+          if (active) setDepartments(filteredData);
+          for (const dep of filteredData) {
             await db.projectDepartments.put({
               id: dep.id,
               project_id: dep.project_id,
@@ -286,6 +362,16 @@ export default function NewReport() {
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
     setProjectDepartments(filtered);
+
+    if (filtered.length === 0) {
+      if (department) setDepartment("");
+      return;
+    }
+
+    if (!department || !filtered.some((dep) => dep.name === department)) {
+      setDepartment(filtered[0].name);
+      return;
+    }
 
     if (department && !filtered.some((dep) => dep.name === department)) {
       setDepartment("");
@@ -350,6 +436,11 @@ export default function NewReport() {
 
     if (!projectId) {
       setError("Please select a project.");
+      return;
+    }
+
+    if (!(await canCurrentUserUseProject(projectId))) {
+      setError("You do not have access to the selected project.");
       return;
     }
 
@@ -477,10 +568,13 @@ return (
                     }}
                     required
                   >
-                    <option value="">Select a category</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
+                    {projects.length === 0 ? (
+                      <option value="">No projects available</option>
+                    ) : (
+                      projects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))
+                    )}
                   </Select>
                   {projects.length === 0 && (
                     <p className="text-sm text-muted-foreground">No projects available.</p>
@@ -496,50 +590,56 @@ return (
                     disabled={!projectId || projectReportTypes.length === 0}
                     required
                   >
-                    <option value="">
-                      {!projectId
-                        ? "Select a project first"
-                        : projectReportTypes.length === 0
-                          ? "No report types for this project"
-                          : "Select a type"}
-                    </option>
-                    {projectReportTypes.map((rt) => (
-                      <option key={rt.id} value={rt.name}>{rt.name}</option>
-                    ))}
+                    {projectReportTypes.length === 0 ? (
+                      <option value="">Report type is not available/set</option>
+                    ) : (
+                      projectReportTypes.map((rt) => (
+                        <option key={rt.id} value={rt.name}>{rt.name}</option>
+                      ))
+                    )}
                   </Select>
                   {projectId && projectReportTypes.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      No report types are configured for this project yet.
+                      Report type is not available/set.
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  id="department"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  disabled={!projectId || projectDepartments.length === 0}
-                  required
-                >
-                  <option value="">
-                    {!projectId
-                      ? "Select a project first"
-                      : projectDepartments.length === 0
-                        ? "No departments for this project"
-                        : "Select a department"}
-                  </option>
-                  {projectDepartments.map((dep) => (
-                    <option key={dep.id} value={dep.name}>{dep.name}</option>
-                  ))}
-                </Select>
-                {projectId && projectDepartments.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No departments are configured for this project yet.
-                  </p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Select
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    disabled={!projectId || projectDepartments.length === 0}
+                    required
+                  >
+                    {projectDepartments.length === 0 ? (
+                      <option value="">Department is not available/set</option>
+                    ) : (
+                      projectDepartments.map((dep) => (
+                        <option key={dep.id} value={dep.name}>{dep.name}</option>
+                      ))
+                    )}
+                  </Select>
+                  {projectId && projectDepartments.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Department is not available/set.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location (Optional)</Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Enter location"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -549,16 +649,6 @@ return (
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location (Optional)</Label>
-                <Input
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Enter location"
                 />
               </div>
 

@@ -139,19 +139,20 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // ---- Access check: caller must own the report, be assigned to it, or be manager/technician ----
+  // ---- Access check: managers always allowed, technicians by assignment, users by project access ----
   const { data: profile } = await adminClient
     .from("user_profiles")
     .select("role")
     .eq("id", userId)
     .single();
 
-  const isStaff = profile?.role === "manager" || profile?.role === "technician";
+  const isManager = profile?.role === "manager";
+  const isTechnician = profile?.role === "technician";
 
-  if (!isStaff) {
+  if (!isManager) {
     const { data: reportRow, error: reportError } = await adminClient
       .from("reports")
-      .select("user_id, assigned_to")
+      .select("user_id, assigned_to, project_id")
       .eq("id", reportId)
       .single();
 
@@ -160,8 +161,23 @@ Deno.serve(async (req) => {
     const isOwner = reportRow.user_id === userId;
     const isAssigned = reportRow.assigned_to === userId;
 
-    if (!isOwner && !isAssigned) {
-      return jsonError(403, "Forbidden: you do not have access to this report");
+    if (isTechnician) {
+      if (!isAssigned && !isOwner) {
+        return jsonError(403, "Forbidden: you do not have access to this report");
+      }
+    } else {
+      const { data: accessRow } = await adminClient
+        .from("user_project_access")
+        .select("project_id")
+        .eq("user_id", userId)
+        .eq("project_id", reportRow.project_id)
+        .maybeSingle();
+
+      const hasProjectAccess = Boolean(accessRow?.project_id);
+
+      if (!hasProjectAccess) {
+        return jsonError(403, "Forbidden: you do not have access to this report");
+      }
     }
   }
 

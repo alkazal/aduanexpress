@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 export default function UsersList() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [assignedProjectCountByUserId, setAssignedProjectCountByUserId] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,6 +48,25 @@ export default function UsersList() {
 
       if (active && data) {
         setUsers(data);
+
+        const userIds = (data || []).map((user) => user.id).filter(Boolean);
+        if (navigator.onLine && userIds.length > 0) {
+          const { data: assignmentData, error: assignmentError } = await supabase
+            .from("user_project_access")
+            .select("user_id, project_id")
+            .in("user_id", userIds);
+
+          if (!assignmentError && assignmentData) {
+            const nextCounts = assignmentData.reduce((acc, row) => {
+              const userId = row.user_id;
+              if (!userId) return acc;
+              acc[userId] = (acc[userId] || 0) + 1;
+              return acc;
+            }, {});
+
+            if (active) setAssignedProjectCountByUserId(nextCounts);
+          }
+        }
       }
 
       if (active) setLoading(false);
@@ -148,6 +168,7 @@ const roleOptions = ["manager", "technician", "user"];
               <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">User</TableHead>
               <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Email</TableHead>
               <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Role</TableHead>
+              <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Assigned Projects</TableHead>
               <TableHead className="text-left px-6 py-3 font-semibold text-gray-600">Joined</TableHead>
             </TableRow>
           </TableHeader>
@@ -196,6 +217,10 @@ const roleOptions = ["manager", "technician", "user"];
                   >
                     {u.role || "user"}
                   </Badge>
+                </TableCell>
+
+                <TableCell className="px-6 py-4 text-gray-600">
+                  {assignedProjectCountByUserId[u.id] || 0}
                 </TableCell>
 
                 {/* Joined Date */}

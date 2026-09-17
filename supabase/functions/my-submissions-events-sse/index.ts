@@ -198,16 +198,29 @@ Deno.serve(async (req) => {
             schema: "public",
             table: "reports",
           },
-          (payload) => {
+          async (payload) => {
             if (closed) return;
 
             const newRow = (payload.new || {}) as Record<string, unknown>;
             const oldRow = (payload.old || {}) as Record<string, unknown>;
             const newOwner = typeof newRow.user_id === "string" ? newRow.user_id : null;
             const oldOwner = typeof oldRow.user_id === "string" ? oldRow.user_id : null;
+            const newProjectId = typeof newRow.project_id === "string" ? newRow.project_id : null;
+            const oldProjectId = typeof oldRow.project_id === "string" ? oldRow.project_id : null;
 
             const isNowOwnedByCaller = newOwner === userId;
             const wasOwnedByCaller = oldOwner === userId;
+
+            const canAccessProject = async (projectId: string | null) => {
+              if (!projectId) return false;
+              const { data: accessRow } = await adminClient
+                .from("user_project_access")
+                .select("project_id")
+                .eq("user_id", userId)
+                .eq("project_id", projectId)
+                .maybeSingle();
+              return Boolean(accessRow?.project_id);
+            };
 
             // Managers should see all report list changes.
             if (isManager) {
@@ -233,8 +246,8 @@ Deno.serve(async (req) => {
               return;
             }
 
-            // Non-manager users should only see their own submissions.
-            if (payload.eventType === "INSERT" && isNowOwnedByCaller) {
+            // Non-manager users should see reports inside their assigned projects.
+            if (payload.eventType === "INSERT" && await canAccessProject(newProjectId)) {
               write(
                 sseFrame({
                   event: "submission-upsert",
@@ -245,7 +258,7 @@ Deno.serve(async (req) => {
             }
 
             if (payload.eventType === "UPDATE") {
-              if (isNowOwnedByCaller) {
+              if (await canAccessProject(newProjectId)) {
                 write(
                   sseFrame({
                     event: "submission-upsert",
@@ -255,7 +268,7 @@ Deno.serve(async (req) => {
                 return;
               }
 
-              if (wasOwnedByCaller && !isNowOwnedByCaller) {
+              if (await canAccessProject(oldProjectId)) {
                 const oldId = typeof oldRow.id === "string" ? oldRow.id : null;
                 if (oldId) {
                   write(
@@ -269,7 +282,7 @@ Deno.serve(async (req) => {
               }
             }
 
-            if (payload.eventType === "DELETE" && wasOwnedByCaller) {
+            if (payload.eventType === "DELETE" && await canAccessProject(oldProjectId)) {
               const oldId = typeof oldRow.id === "string" ? oldRow.id : null;
               if (oldId) {
                 write(

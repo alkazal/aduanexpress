@@ -6,6 +6,7 @@ import { db } from "../db";
 import { supabase } from "../lib/supabase";
 import { syncReports } from "../lib/sync";
 import { compressImage } from "../utils/imageCompressor";
+import { canCurrentUserAccessReport, canCurrentUserUseProject, getAccessibleProjectIdsForCurrentUser, loadProjectsForCurrentUser } from "../lib/projectAccess";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -48,6 +49,11 @@ export default function EditReport() {
       const localReport = await db.reports.get(id);
 
       if (localReport) {
+        if (!(await canCurrentUserAccessReport(localReport, { preferOnline: false }))) {
+          navigate("/");
+          return;
+        }
+
         setReport(localReport);
 
         const localAtt = await db.attachments
@@ -75,6 +81,11 @@ export default function EditReport() {
         .single();
 
       if (onlineReport) {
+        if (!(await canCurrentUserAccessReport(onlineReport))) {
+          navigate("/");
+          return;
+        }
+
         setReport(onlineReport);
 
         const { data: onlineAtt } = await supabase
@@ -97,26 +108,8 @@ export default function EditReport() {
     let active = true;
 
     async function loadProjects() {
-      const localProjects = await db.projects.toArray();
-      if (active) setProjects(localProjects);
-
-      if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from("projects")
-          .select("id, name, updated_at")
-          .order("name", { ascending: true });
-
-        if (!error && data) {
-          if (active) setProjects(data);
-          for (const p of data) {
-            await db.projects.put({
-              id: p.id,
-              name: p.name,
-              updated_at: p.updated_at || null
-            });
-          }
-        }
-      }
+      const visibleProjects = await loadProjectsForCurrentUser();
+      if (active) setProjects(visibleProjects);
     }
 
     loadProjects();
@@ -129,7 +122,12 @@ export default function EditReport() {
     let active = true;
 
     async function loadReportTypes() {
-      const localReportTypes = await db.reportTypes.toArray();
+      const accessibleProjectIds = await getAccessibleProjectIdsForCurrentUser({ preferOnline: false });
+      const allowedSet = accessibleProjectIds ? new Set(accessibleProjectIds) : null;
+      const localReportTypes = (await db.reportTypes.toArray()).filter((reportType) => {
+        if (!allowedSet) return true;
+        return allowedSet.has(reportType.project_id);
+      });
       if (active) setReportTypes(localReportTypes || []);
 
       if (navigator.onLine) {
@@ -139,8 +137,13 @@ export default function EditReport() {
           .order("name", { ascending: true });
 
         if (!error && data) {
-          if (active) setReportTypes(data);
-          for (const rt of data) {
+          const filteredData = (data || []).filter((reportType) => {
+            if (!allowedSet) return true;
+            return allowedSet.has(reportType.project_id);
+          });
+
+          if (active) setReportTypes(filteredData);
+          for (const rt of filteredData) {
             await db.reportTypes.put({
               id: rt.id,
               project_id: rt.project_id,
@@ -162,7 +165,12 @@ export default function EditReport() {
     let active = true;
 
     async function loadDepartments() {
-      const localDepartments = await db.projectDepartments.toArray();
+      const accessibleProjectIds = await getAccessibleProjectIdsForCurrentUser({ preferOnline: false });
+      const allowedSet = accessibleProjectIds ? new Set(accessibleProjectIds) : null;
+      const localDepartments = (await db.projectDepartments.toArray()).filter((department) => {
+        if (!allowedSet) return true;
+        return allowedSet.has(department.project_id);
+      });
       if (active) setDepartments(localDepartments || []);
 
       if (navigator.onLine) {
@@ -172,8 +180,13 @@ export default function EditReport() {
           .order("name", { ascending: true });
 
         if (!error && data) {
-          if (active) setDepartments(data);
-          for (const dep of data) {
+          const filteredData = (data || []).filter((department) => {
+            if (!allowedSet) return true;
+            return allowedSet.has(department.project_id);
+          });
+
+          if (active) setDepartments(filteredData);
+          for (const dep of filteredData) {
             await db.projectDepartments.put({
               id: dep.id,
               project_id: dep.project_id,
@@ -190,6 +203,62 @@ export default function EditReport() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function prefillRequestorFromProfile() {
+      if (!report?.id) return;
+      if ((report.requestor_name || "").trim() && (report.requestor_phone_no || "").trim()) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const user = session?.user;
+      if (!user || !active) return;
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("full_name, contact_no")
+        .eq("id", user.id)
+        .single();
+
+      const fallbackName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.user_metadata?.display_name ||
+        "";
+
+      const profileName = (profile?.full_name || "").trim() || fallbackName.trim();
+      const profilePhone = (profile?.contact_no || "").trim() || (user.phone || "").trim();
+
+      if (!active) return;
+
+      setReport((current) => {
+        if (!current || current.id !== report.id) return current;
+
+        const nextName = (current.requestor_name || "").trim() ? current.requestor_name : (profileName || "");
+        const nextPhone = (current.requestor_phone_no || "").trim() ? current.requestor_phone_no : (profilePhone || "");
+
+        if (nextName === current.requestor_name && nextPhone === current.requestor_phone_no) {
+          return current;
+        }
+
+        return {
+          ...current,
+          requestor_name: nextName,
+          requestor_phone_no: nextPhone,
+        };
+      });
+    }
+
+    prefillRequestorFromProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [report?.id]);
 
   const projectReportTypes = useMemo(() => {
     if (!report?.project_id) return [];
@@ -279,6 +348,11 @@ export default function EditReport() {
   const handleSave = async () => {
     if (!report.title) {
       alert("Title required");
+      return;
+    }
+
+    if (!(await canCurrentUserUseProject(report.project_id))) {
+      alert("You no longer have access to the selected project.");
       return;
     }
 
@@ -397,7 +471,7 @@ export default function EditReport() {
           </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="edit-project">Project</Label>
             <Select
@@ -469,6 +543,18 @@ export default function EditReport() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="edit-location">Location (Optional)</Label>
+            <Input
+              id="edit-location"
+              value={report.location || ""}
+              onChange={(e) =>
+                setReport({ ...report, location: e.target.value })
+              }
+              placeholder="Enter location"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-request-datetime">Datetime Reported</Label>
             <div className="w-full overflow-hidden">
             <Input
@@ -496,18 +582,6 @@ export default function EditReport() {
               onChange={(e) =>
                 setReport({ ...report, description: e.target.value })
               }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-location">Location (Optional)</Label>
-            <Input
-              id="edit-location"
-              value={report.location || ""}
-              onChange={(e) =>
-                setReport({ ...report, location: e.target.value })
-              }
-              placeholder="Enter location"
             />
           </div>
 

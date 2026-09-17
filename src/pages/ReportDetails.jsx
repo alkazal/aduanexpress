@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Textarea } from "../components/ui/textarea";
 import { Select } from "../components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../components/ui/sheet";
+import { canCurrentUserAccessReport } from "../lib/projectAccess";
 
 export default function ReportDetails() {
   const { id } = useParams();
@@ -135,6 +136,11 @@ export default function ReportDetails() {
         // 1️⃣ Load local report
         const local = await db.reports.get(id);
         if (local) {
+          if (!(await canCurrentUserAccessReport(local, { preferOnline: false }))) {
+            navigate("/");
+            return;
+          }
+
           const localWithHistory = { ...local, history: local._status_changes || [] };
           setReport(localWithHistory);
 
@@ -174,6 +180,11 @@ export default function ReportDetails() {
           if (reportError) {
             console.error("Error fetching online report:", reportError);
           } else if (online) {
+            if (!(await canCurrentUserAccessReport(online))) {
+              navigate("/");
+              return;
+            }
+
             setReport(prev => ({
               ...prev,
               ...online,
@@ -437,7 +448,10 @@ export default function ReportDetails() {
       </div>
     );
 
-  const canManageReport = userRole === "manager" || (currentUserId && report.user_id === currentUserId);
+  const isOwner = Boolean(currentUserId && report.user_id === currentUserId);
+  const isProjectViewer = userRole === "user" && !isOwner;
+  const canManageReport = userRole === "manager" || isOwner;
+  const canPostPublicReply = !isProjectViewer;
 
   // ----------------------------------------------------
   // BUILD STATUS TIMELINE (NEW CLEAN VERSION)
@@ -1540,6 +1554,14 @@ export default function ReportDetails() {
 
       <h2 className="text-lg font-semibold mb-4">Action & Solution</h2>
 
+      {isProjectViewer && (
+        <Alert className="mb-4 border-blue-200 bg-blue-50 text-blue-700">
+          <AlertDescription>
+            You are viewing this report as a project reference. Only the original submitter or manager can edit or reply.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Tabs */}
       <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
         <Button
@@ -1549,7 +1571,7 @@ export default function ReportDetails() {
             activeTab === "public" ? "bg-white shadow" : ""
           }`}
         >
-          Problem Cause & Corrective Action
+          Cause & Corrective Action
         </Button>
 
         {isStaff && (
@@ -1568,51 +1590,55 @@ export default function ReportDetails() {
       {/* PUBLIC REPLY */}
       {activeTab === "public" && (
         <>
-          <Textarea
-            value={publicReply}
-            onChange={(e) => setPublicReply(e.target.value)}
-            placeholder="Type cause of problem and corrective action here..."
-            rows={4}
-          />
+          {canPostPublicReply && (
+            <>
+              <Textarea
+                value={publicReply}
+                onChange={(e) => setPublicReply(e.target.value)}
+                placeholder="Type cause of problem and corrective action here..."
+                rows={4}
+              />
 
-          {/* File Input and Preview for Public Reply */}
-          <div className="mt-3 border border-dashed border-gray-300 rounded p-3 bg-gray-50">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Attachments
-            </label>
-            <input
-              type="file"
-              multiple
-              onChange={handlePublicReplyAttachments}
-              className="block w-full text-sm text-gray-600 cursor-pointer"
-              disabled={uploadingAttachments}
-            />
-            {publicReplyAttachments.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {publicReplyAttachments.map((file, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
-                    <span className="truncate">{file.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPublicReplyAttachments(prev => prev.filter((_, i) => i !== idx))}
-                      className="h-6 px-2"
-                    >
-                      Remove
-                    </Button>
+              {/* File Input and Preview for Public Reply */}
+              <div className="mt-3 border border-dashed border-gray-300 rounded p-3 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Attachments
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={handlePublicReplyAttachments}
+                  className="block w-full text-sm text-gray-600 cursor-pointer"
+                  disabled={uploadingAttachments}
+                />
+                {publicReplyAttachments.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {publicReplyAttachments.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border">
+                        <span className="truncate">{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPublicReplyAttachments(prev => prev.filter((_, i) => i !== idx))}
+                          className="h-6 px-2"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
 
-          <Button
-            onClick={sendPublicReply}
-            disabled={uploadingAttachments || (!publicReply.trim() && publicReplyAttachments.length === 0)}
-            className="mt-3"
-          >
-            {uploadingAttachments ? "Uploading..." : "Send Response"}
-          </Button>
+              <Button
+                onClick={sendPublicReply}
+                disabled={uploadingAttachments || (!publicReply.trim() && publicReplyAttachments.length === 0)}
+                className="mt-3"
+              >
+                {uploadingAttachments ? "Uploading..." : "Send Response"}
+              </Button>
+            </>
+          )}
 
           {/* Display Previous Public Replies */}
           <div className="mt-6 space-y-3">
@@ -1716,7 +1742,7 @@ export default function ReportDetails() {
                         </div>
                       )}
 
-                      {currentUserId && c.user_id === currentUserId && (
+                      {canPostPublicReply && currentUserId && c.user_id === currentUserId && (
                         <div className="mt-2 flex gap-2">
                           <Button
                             type="button"
@@ -1898,7 +1924,7 @@ export default function ReportDetails() {
                         </div>
                       )}
 
-                      {currentUserId && c.user_id === currentUserId && (
+                      {canPostPublicReply && currentUserId && c.user_id === currentUserId && (
                         <div className="mt-2 flex gap-2">
                           <Button
                             type="button"

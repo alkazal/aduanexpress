@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
+import { db } from "../db";
+import { loadAssignedProjectIdsForTargetUser, saveAssignedProjectIdsForTargetUser } from "../lib/projectAccess";
 
 export default function UserProfile() {
   const { id } = useParams();
@@ -15,6 +17,8 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [assignedProjectIds, setAssignedProjectIds] = useState([]);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -26,6 +30,13 @@ export default function UserProfile() {
       setError("");
 
       let data = null;
+
+      const localProjects = await db.projects.toArray();
+      const localAssignments = await db.userProjectAccess.where("user_id").equals(id).toArray();
+      if (active) {
+        setProjects((localProjects || []).sort((a, b) => (a.name || "").localeCompare(b.name || "")));
+        setAssignedProjectIds(localAssignments.map((row) => row.project_id));
+      }
 
       const { data: viewData, error: viewError } = await supabase
         .from("user_profiles_with_email")
@@ -51,6 +62,30 @@ export default function UserProfile() {
 
       if (active) {
         setProfile(data);
+        if (navigator.onLine) {
+          const { data: projectData, error: projectError } = await supabase
+            .from("projects")
+            .select("id, name, updated_at")
+            .order("name", { ascending: true });
+
+          if (!projectError && projectData) {
+            setProjects(projectData);
+            for (const project of projectData) {
+              await db.projects.put({
+                id: project.id,
+                name: project.name,
+                updated_at: project.updated_at || null,
+              });
+            }
+          }
+
+          try {
+            const nextAssignedIds = await loadAssignedProjectIdsForTargetUser(id);
+            if (active) setAssignedProjectIds(nextAssignedIds);
+          } catch (assignmentError) {
+            if (active) setError(assignmentError.message);
+          }
+        }
         setLoading(false);
       }
     }
@@ -112,10 +147,26 @@ export default function UserProfile() {
       return;
     }
 
+    try {
+      await saveAssignedProjectIdsForTargetUser(profile.id, assignedProjectIds);
+    } catch (assignmentError) {
+      setStatus(assignmentError.message);
+      setSaving(false);
+      return;
+    }
+
     setStatus("Profile updated successfully.");
     setSaving(false);
-    navigate("/dashboard");
+    navigate("/users");
   };
+
+  function toggleProject(projectId) {
+    setAssignedProjectIds((prev) =>
+      prev.includes(projectId)
+        ? prev.filter((id) => id !== projectId)
+        : [...prev, projectId]
+    );
+  }
 
   return (
     
@@ -230,6 +281,30 @@ export default function UserProfile() {
             }
             readOnly
           />
+        </div>
+
+        <div className="space-y-3">
+          <Label>Allowed Projects</Label>
+          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-2 max-h-72 overflow-y-auto">
+            {projects.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No projects available.</p>
+            ) : (
+              projects.map((project) => (
+                <label key={project.id} className="flex items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={assignedProjectIds.includes(project.id)}
+                    onChange={() => toggleProject(project.id)}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <span>{project.name}</span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Users can only create and view their own reports inside the selected projects.
+          </p>
         </div>
 
         <Button

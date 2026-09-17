@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { db } from "../db";
 import { emitSyncStatus, emitReportSynced } from "./syncEvents";
 import { toReportServerPayload } from "./reportPayload";
+import { getCachedAppUser, loadProjectIdsForUser, replaceUserProjectAccess } from "./projectAccess";
 
 /* ===============================
    HELPER: Detect MIME TYPE
@@ -82,14 +83,46 @@ export async function syncReports() {
       return;
     }
 
+    const cachedUser = getCachedAppUser();
+    const userRole = cachedUser?.role || "user";
+    const accessibleProjectIds = userRole === "manager"
+      ? null
+      : await loadProjectIdsForUser(user.id);
+    const accessibleProjectIdSet = accessibleProjectIds ? new Set(accessibleProjectIds) : null;
+
      /* =========================================================
        0. SYNC PROJECTS + REPORT TYPES + DEPARTMENTS (for selectors + offline display)
      ========================================================== */
     try {
-      const { data: onlineProjects, error: projErr } = await supabase
-        .from("projects")
-        .select("id, name, updated_at")
-        .order("name", { ascending: true });
+      let onlineProjects = null;
+      let projErr = null;
+
+      if (userRole === "manager") {
+        ({ data: onlineProjects, error: projErr } = await supabase
+          .from("projects")
+          .select("id, name, updated_at")
+          .order("name", { ascending: true }));
+      } else {
+        const { data, error } = await supabase
+          .from("user_project_access")
+          .select("project:project_id(id, name, updated_at)")
+          .eq("user_id", user.id);
+
+        projErr = error;
+        onlineProjects = (data || [])
+          .map((row) => row.project)
+          .filter(Boolean)
+          .map((project) => ({
+            id: project.id,
+            name: project.name,
+            updated_at: project.updated_at || null,
+          }));
+
+        await replaceUserProjectAccess(
+          user.id,
+          onlineProjects.map((project) => project.id)
+        );
+      }
 
       if (!projErr && onlineProjects) {
         for (const p of onlineProjects) {
@@ -112,6 +145,7 @@ export async function syncReports() {
 
       if (!typeErr && onlineReportTypes) {
         for (const rt of onlineReportTypes) {
+          if (accessibleProjectIdSet && !accessibleProjectIdSet.has(rt.project_id)) continue;
           await db.reportTypes.put({
             id: rt.id,
             project_id: rt.project_id,
@@ -132,6 +166,7 @@ export async function syncReports() {
 
       if (!depErr && onlineDepartments) {
         for (const dep of onlineDepartments) {
+          if (accessibleProjectIdSet && !accessibleProjectIdSet.has(dep.project_id)) continue;
           await db.projectDepartments.put({
             id: dep.id,
             project_id: dep.project_id,
@@ -281,6 +316,16 @@ export async function syncReports() {
       const hasConfiguredTypes = allowedTypes.size > 0;
       const hasTypeSelected = typeof report.report_type === "string" && report.report_type.trim() !== "";
       const isTypeValid = hasTypeSelected && allowedTypes.has(report.report_type);
+
+      if (accessibleProjectIdSet && !accessibleProjectIdSet.has(report.project_id)) {
+        const syncError = "Project access removed for this report";
+        console.warn(`SYNC: ${syncError} (report ${reportId})`);
+        await db.reports.update(reportId, {
+          synced: false,
+          _sync_error: syncError
+        });
+        continue;
+      }
 
       if (hasConfiguredTypes && !isTypeValid) {
         const syncError = "Invalid report type for selected project";
@@ -507,7 +552,7 @@ export async function syncReports() {
     /* =========================================================
        4. PULL LATEST REPORTS FROM SUPABASE
     ========================================================== */
-    const { data: onlineReports } = await supabase
+    let reportsQuery = supabase
       .from("reports")
       .select(`
         *,
@@ -523,10 +568,24 @@ export async function syncReports() {
           changed_by,
           changed_by_name
         )
-      `)
-      // Pull both reports the user created AND reports assigned to them
-      // (technicians have assigned_to = user.id, not user_id = user.id)
-      .or(`user_id.eq.${user.id},assigned_to.eq.${user.id}`);
+      `);
+
+    if (userRole === "manager") {
+      reportsQuery = reportsQuery.order("created_at", { ascending: false });
+    } else if (userRole === "technician") {
+      reportsQuery = reportsQuery
+        .or(`user_id.eq.${user.id},assigned_to.eq.${user.id}`)
+        .order("created_at", { ascending: false });
+    } else if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+      reportsQuery = reportsQuery
+        .eq("user_id", user.id)
+        .in("project_id", accessibleProjectIds)
+        .order("created_at", { ascending: false });
+    } else {
+      reportsQuery = null;
+    }
+
+    const { data: onlineReports } = reportsQuery ? await reportsQuery : { data: [] };
 
     if (onlineReports) {
       for (const r of onlineReports) {

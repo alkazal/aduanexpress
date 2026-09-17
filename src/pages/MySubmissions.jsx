@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
+import { getAccessibleProjectIdsForCurrentUser } from "../lib/projectAccess";
 import StatusBadge from "../components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Inbox, Clock, AlertCircle, CheckCircle, CalendarRange, ChevronDown } from "lucide-react";
@@ -46,10 +47,17 @@ export default function MySubmissions() {
 
     const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
     const userRole = cachedUser.role;
+    const accessibleProjectIds = userRole === "manager"
+      ? null
+      : await getAccessibleProjectIdsForCurrentUser();
 
     if (!userId) {
       if (navigator.onLine) navigate("/login");
-      const offlineData = await db.reports.toArray();
+      let offlineData = await db.reports.toArray();
+      if (accessibleProjectIds) {
+        const allowedSet = new Set(accessibleProjectIds);
+        offlineData = offlineData.filter((report) => allowedSet.has(report.project_id));
+      }
       setItems(offlineData);
       if (!silent) setLoading(false);
       return;
@@ -57,9 +65,15 @@ export default function MySubmissions() {
 
     let list = [];
 
-    const localReportsForMerge = userRole === "manager"
-      ? await db.reports.toArray()
-      : await db.reports.where("user_id").equals(userId).toArray();
+    let localReportsForMerge = await db.reports.toArray();
+
+    if (userRole === "technician") {
+      localReportsForMerge = localReportsForMerge.filter((report) => report.user_id === userId);
+    }
+
+    const filteredLocalReportsForMerge = accessibleProjectIds
+      ? localReportsForMerge.filter((report) => new Set(accessibleProjectIds).has(report.project_id))
+      : localReportsForMerge;
 
     if (navigator.onLine) {
       let query;
@@ -76,6 +90,14 @@ export default function MySubmissions() {
           `)
           .order("created_at", { ascending: false });
       } else {
+        if (accessibleProjectIds && accessibleProjectIds.length === 0) {
+          setItems(filteredLocalReportsForMerge.filter((report) => report.synced === false || report.synced === "false" || report.to_delete === true || Boolean(report._sync_error)));
+          if (!silent) {
+            setLoading(false);
+          }
+          return;
+        }
+
         query = supabase
           .from("reports")
           .select(`
@@ -84,8 +106,15 @@ export default function MySubmissions() {
             technician:assigned_to ( full_name ),
             project:project_id ( name )
           `)
-          .eq("user_id", userId)
           .order("created_at", { ascending: false });
+
+        if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+          query = query.in("project_id", accessibleProjectIds);
+        }
+
+        if (userRole === "technician") {
+          query = query.eq("user_id", userId);
+        }
       }
 
       const { data, error } = await query;
@@ -100,11 +129,13 @@ export default function MySubmissions() {
         }));
 
         const onlineMap = new Map(list.map((r) => [r.id, r]));
-        const localMapped = (localReportsForMerge || []).map((r) => ({
+        const localMapped = (filteredLocalReportsForMerge || []).map((r) => ({
           ...r,
           submitted_by: userRole === "manager"
             ? r.reporter_name || "User"
-            : r.reporter_name || "You",
+            : r.user_id === userId
+              ? "You"
+              : r.reporter_name || "User",
           assigned_to: r.technician_name,
           project_name: r.project_name || r.project_id || null,
           project_key: r.project_id || r.project_name || "NO_PROJECT"
@@ -136,18 +167,27 @@ export default function MySubmissions() {
 
       if (userRole === "manager") {
         offlineData = await db.reports.toArray();
+      } else if (userRole === "user") {
+        offlineData = await db.reports.toArray();
       } else {
         offlineData = await db.reports
           .where("user_id")
           .equals(userId)
           .toArray();
+
+        if (accessibleProjectIds) {
+          const allowedSet = new Set(accessibleProjectIds);
+          offlineData = offlineData.filter((report) => allowedSet.has(report.project_id));
+        }
       }
 
       list = offlineData.map(r => ({
         ...r,
         submitted_by: userRole === "manager"
           ? r.reporter_name || "User"
-          : r.reporter_name || "You",
+          : r.user_id === userId
+            ? "You"
+            : r.reporter_name || "User",
         assigned_to: r.technician_name,
         project_name: r.project_name || r.project_id || null,
         project_key: r.project_id || r.project_name || "NO_PROJECT"

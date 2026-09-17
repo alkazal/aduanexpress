@@ -6,6 +6,7 @@ import Toast from "../components/Toast";
 import { Button } from "../components/ui/button";
 import { setSyncStatusListener, setReportSyncedListener, clearSyncListeners } from "../lib/syncEvents";
 import { createMySubmissionsEventStream } from "../lib/mySubmissionsEventStream";
+import { getAccessibleProjectIdsForCurrentUser } from "../lib/projectAccess";
 //import { startNotificationListener } from "../lib/notificationListener";
 
 import { AlertCircle, CheckCircle, FileText, FolderOpen, Lock } from 'lucide-react';
@@ -64,6 +65,9 @@ export default function Home() {
 
     const cachedUser = JSON.parse(localStorage.getItem("appUser") || "{}");
     const userRole = cachedUser.role;
+    const accessibleProjectIds = userRole === "manager"
+      ? null
+      : await getAccessibleProjectIdsForCurrentUser();
 
 
     // const { data } = await supabase
@@ -78,6 +82,19 @@ export default function Home() {
     let onlineReports = [];
     let list = [];
 
+    let offlineReports = await db.reports.toArray();
+
+    if (accessibleProjectIds) {
+      const allowedSet = new Set(accessibleProjectIds);
+      offlineReports = offlineReports.filter((report) => allowedSet.has(report.project_id));
+    }
+
+    if (userRole === "user") {
+      offlineReports = offlineReports.filter((report) => report.to_delete !== true);
+    } else if (userRole !== "manager") {
+      offlineReports = offlineReports.filter((report) => report.user_id === session.user.id);
+    }
+
     if (navigator.onLine) {
       let query;
       if (userRole === "manager") {
@@ -91,6 +108,14 @@ export default function Home() {
           `)
           .order("created_at", { ascending: false });
       } else {
+        if (accessibleProjectIds && accessibleProjectIds.length === 0) {
+          setReports(offlineReports);
+          if (!silent) {
+            setLoading(false);
+          }
+          return;
+        }
+
         query = supabase
           .from("reports")
           .select(`
@@ -99,8 +124,15 @@ export default function Home() {
             technician:assigned_to ( full_name ),
             project:project_id ( name )
           `)
-          .eq("user_id", session.user.id)
           .order("created_at", { ascending: false });
+
+        if (accessibleProjectIds && accessibleProjectIds.length > 0) {
+          query = query.in("project_id", accessibleProjectIds);
+        }
+
+        if (userRole === "technician") {
+          query = query.eq("user_id", session.user.id);
+        }
       }
 
       const { data, error } = await query;
@@ -124,14 +156,37 @@ export default function Home() {
 
     }
 
-    // Offline reports
-    const offlineReports = await db.reports
-      .where("user_id")
-      .equals(session.user.id)
-      .and(r => r.synced === false)
-      .toArray();
+    const mergedMap = new Map((onlineReports || []).map((report) => [report.id, report]));
 
-    setReports([...offlineReports, ...onlineReports]);
+    for (const localReport of offlineReports) {
+      const mappedLocal = {
+        ...localReport,
+        submitted_by:
+          localReport.user_id === session.user.id
+            ? "You"
+            : localReport.reporter_name || "User",
+        assigned_to: localReport.technician_name || "Unknown",
+      };
+
+      const shouldOverlay =
+        localReport.synced === false ||
+        localReport.synced === "false" ||
+        Boolean(localReport._sync_error) ||
+        localReport.to_delete === true;
+
+      if (!mergedMap.has(localReport.id) || shouldOverlay) {
+        mergedMap.set(localReport.id, {
+          ...(mergedMap.get(localReport.id) || {}),
+          ...mappedLocal,
+        });
+      }
+    }
+
+    setReports(
+      Array.from(mergedMap.values()).sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )
+    );
     if (!silent) {
       setLoading(false);
     }
